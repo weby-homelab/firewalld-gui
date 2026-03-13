@@ -1,0 +1,247 @@
+from fastapi import FastAPI, HTTPException, Body, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+import subprocess, json, os, re, requests, shutil, sqlite3
+
+SECRET_KEY = "super-secret-firewalld-gui-key-2026"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+DATA_DIR = "/app/data"
+USER_DATA_FILE = f"{DATA_DIR}/users.json"
+CONFIG_FILE = f"{DATA_DIR}/config.json"
+SNAPSHOTS_DIR = f"{DATA_DIR}/snapshots"
+DB_FILE = f"{DATA_DIR}/stats.db"
+
+app = FastAPI(title="Firewalld-GUI API")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
+
+def init_db():
+    os.makedirs(DATA_DIR, exist_ok=True)
+    conn = sqlite3.connect(DB_FILE)
+    conn.execute("CREATE TABLE IF NOT EXISTS drops (id INTEGER PRIMARY KEY, ts TIMESTAMP, src TEXT, proto TEXT, port TEXT, UNIQUE(ts, src, port))")
+    conn.execute("CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY, ts TIMESTAMP, username TEXT, action TEXT, details TEXT)")
+    conn.commit(); conn.close()
+
+init_db()
+
+def log_action(username, action, details):
+    conn = sqlite3.connect(DB_FILE)
+    conn.execute("INSERT INTO audit_logs (ts, username, action, details) VALUES (?, ?, ?, ?)", (datetime.now().isoformat(), username, action, str(details)))
+    conn.commit(); conn.close()
+    send_tg_alert(f"🛡️ *Firewalld Action*\n👤 User: {username}\n🎯 Action: {action}\n📝 Details: ")
+
+def send_tg_alert(text):
+    if not os.path.exists(CONFIG_FILE): return
+    try:
+        with open(CONFIG_FILE, "r") as f: cfg = json.load(f)
+        t = cfg.get("tg_token"); c = cfg.get("tg_chat_id")
+        if t and c: requests.post(f"https://api.telegram.org/bot{t}/sendMessage", json={"chat_id": c, "text": text, "parse_mode": "Markdown"}, timeout=1.5)
+    except: pass
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username = payload.get("sub")
+        users = load_users()
+        if username not in users: raise HTTPException(status_code=401)
+        return {"username": username, "role": users[username].get("role", "admin")}
+    except JWTError: raise HTTPException(status_code=401)
+
+def load_users():
+    if not os.path.exists(USER_DATA_FILE): return {}
+    with open(USER_DATA_FILE, "r") as f: return json.load(f)
+
+def save_users(users):
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(USER_DATA_FILE, "w") as f: json.dump(users, f)
+
+
+def run_cmd(cmd):
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e: raise HTTPException(status_code=500, detail=e.stderr)
+
+@app.get("/api/auth/setup-needed")
+async def is_setup_needed(): return {"setup_needed": len(load_users()) == 0}
+
+@app.post("/api/auth/setup")
+async def setup_admin(username: str = Body(...), password: str = Body(...)):
+    users = load_users()
+    if len(users) > 0: raise HTTPException(status_code=400)
+    users[username] = {"password": pwd_context.hash(password), "role": "superadmin"}
+    os.makedirs(DATA_DIR, exist_ok=True); json.dump(users, open(USER_DATA_FILE, "w"))
+    log_action(username, "SETUP", "Superadmin created")
+    return {"status": "success"}
+
+@app.post("/api/auth/login")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    users = load_users()
+    u = users.get(form_data.username)
+    if not u or not pwd_context.verify(form_data.password, u["password"]): raise HTTPException(status_code=401)
+    t = jwt.encode({"sub": form_data.username, "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)}, SECRET_KEY, algorithm=ALGORITHM)
+    return {"access_token": t, "token_type": "bearer"}
+
+@app.get("/api/auth/me")
+async def get_me(u=Depends(get_current_user)): return u
+
+@app.get("/api/status")
+async def get_status(u=Depends(get_current_user)): return {"firewalld_state": run_cmd(["firewall-cmd", "--state"])}
+
+@app.get("/api/zones/all")
+async def get_all_zones(u=Depends(get_current_user)): return {"zones": run_cmd(["firewall-cmd", "--get-zones"]).split()}
+
+@app.get("/api/zone/{name}/details")
+async def get_zone_details(name: str, u=Depends(get_current_user)):
+    p = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-ports"])
+    s = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-services"])
+    r = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-rich-rules"])
+    f = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-forward-ports"])
+    return {"ports": p.split(), "services": s.split(), "rich_rules": r.split("\n") if r else [], "forward_ports": f.split("\n") if f else []}
+
+@app.post("/api/zone/{name}/{type}")
+async def add_item(name: str, type: str, data: dict = Body(...), u=Depends(get_current_user)):
+    val = data.get("port") or data.get("service") or data.get("rule") or data.get("forward")
+    shutil.copytree("/etc/firewalld", SNAPSHOTS_DIR+"/auto_"+datetime.now().strftime("%H%M%S"), dirs_exist_ok=True)
+    res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--add-{type}={val}"])
+    log_action(u["username"], f"ADD_{type.upper()}", f"Zone: {name}, Val: {val}")
+    return {"result": res}
+
+@app.delete("/api/zone/{name}/{type}/{val:path}")
+async def remove_item(name: str, type: str, val: str, u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--remove-{type}={val}"])
+    log_action(u["username"], f"REMOVE_{type.upper()}", f"Zone: {name}, Val: {val}")
+    return {"result": res}
+
+@app.get("/api/ipsets/all")
+async def get_ipsets(u=Depends(get_current_user)): return {"ipsets": run_cmd(["firewall-cmd", "--permanent", "--get-ipsets"]).split()}
+
+@app.get("/api/ipset/{name}/details")
+async def get_ipset_details(name: str, u=Depends(get_current_user)):
+    e = run_cmd(["firewall-cmd", "--permanent", "--ipset=" + name, "--get-entries"])
+    return {"name": name, "entries": e.split() if e else []}
+
+@app.post("/api/ipset/{name}/entry")
+async def add_ipset_entry(name: str, entry: str = Body(..., embed=True), u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--ipset=" + name, "--add-entry=" + entry])
+    log_action(u["username"], "IPSET_ADD", f"Set: {name}, IP: {entry}"); return {"result": res}
+
+@app.delete("/api/ipset/{name}/entry/{entry}")
+async def remove_ipset_entry(name: str, entry: str, u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--ipset=" + name, "--remove-entry=" + entry])
+    log_action(u["username"], "IPSET_REMOVE", f"Set: {name}, IP: {entry}"); return {"result": res}
+
+@app.post("/api/ipset/create")
+async def create_ipset(name: str=Body(..., embed=True), u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--new-ipset=" + name, "--type=hash:ip"])
+    log_action(u["username"], "IPSET_CREATE", f"Set: {name}"); return {"result": res}
+
+@app.get("/api/logs")
+async def get_fw_logs(u=Depends(get_current_user)):
+    try:
+        with open("/var/log/messages", "r") as f: lines = f.readlines()
+        parsed = []; conn = sqlite3.connect(DB_FILE)
+        for line in lines[-300:]:
+            if "REJECT" in line or "DROP" in line:
+                src = re.search(r"SRC=([\d\.]+)", line); p = re.search(r"PROTO=(\w+)", line); d = re.search(r"DPT=(\d+)", line)
+                if src: 
+                    item = {"time": line[:16], "src": src.group(1), "proto": p.group(1) if p else "?", "port": d.group(1) if d else "?"}
+                    parsed.append(item)
+                    conn.execute("INSERT OR IGNORE INTO drops (ts, src, proto, port) VALUES (?, ?, ?, ?)", (datetime.now().isoformat(), item["src"], item["proto"], item["port"]))
+        conn.commit(); conn.close(); return {"logs": parsed[::-1][:40]}
+    except: return {"logs": []}
+
+@app.get("/api/stats")
+async def get_stats(u=Depends(get_current_user)):
+    conn = sqlite3.connect(DB_FILE); res = conn.execute("SELECT strftime(\"%H\", ts) as hr, count(*) FROM drops WHERE ts > datetime(\"now\", \"-24 hours\") GROUP BY hr").fetchall(); conn.close()
+    return {"hourly": [{"hour": r[0], "count": r[1]} for r in res]}
+
+@app.post("/api/quick-ban")
+async def quick_ban(ip: str=Body(..., embed=True), u=Depends(get_current_user)):
+    try:
+        whitelist = run_cmd(["firewall-cmd", "--permanent", "--ipset=whitelist", "--get-entries"]).split()
+        if ip in whitelist: return {"status": "ignored", "message": "IP is whitelisted"}
+    except: pass
+    
+    ipsets = run_cmd(["firewall-cmd", "--permanent", "--get-ipsets"]).split()
+    if "blacklist" not in ipsets:
+        run_cmd(["firewall-cmd", "--permanent", "--new-ipset=blacklist", "--type=hash:ip"])
+        run_cmd(["firewall-cmd", "--permanent", "--zone=public", "--add-rich-rule=rule family=ipv4 source ipset=blacklist drop"])
+    
+    run_cmd(["firewall-cmd", "--permanent", "--ipset=blacklist", "--add-entry=" + ip])
+    run_cmd(["firewall-cmd", "--reload"])
+    log_action(u["username"], "QUICK_BAN", f"IP: {ip}")
+    return {"status": "success"}
+
+@app.get("/api/whois/{ip}")
+async def get_whois(ip: str, u=Depends(get_current_user)): return requests.get(f"http://ip-api.com/json/{ip}").json()
+
+@app.get("/api/fail2ban/status")
+async def get_f2b(u=Depends(get_current_user)):
+    try:
+        jails = re.search(r"Jail list:\s+(.*)", run_cmd(["fail2ban-client", "status"])).group(1).split(", ")
+        banned = []
+        for j in jails:
+            ips = run_cmd(["fail2ban-client", "status", j]).split("Banned IP list:")[-1].strip().split()
+            for ip in ips: banned.append({"ip": ip, "jail": j})
+        return {"banned": banned}
+    except: return {"banned": []}
+
+@app.post("/api/fail2ban/unban")
+async def unban(ip: str=Body(...), jail: str=Body(...), u=Depends(get_current_user)):
+    res = run_cmd(["fail2ban-client", "set", jail, "unbanip", ip])
+    log_action(u["username"], "F2B_UNBAN", f"IP: {ip}, Jail: {jail}"); return {"result": res}
+
+@app.get("/api/audit-logs")
+async def get_audit(u=Depends(get_current_user)):
+    conn = sqlite3.connect(DB_FILE); res = conn.execute("SELECT ts, username, action, details FROM audit_logs ORDER BY id DESC LIMIT 50").fetchall(); conn.close()
+    return {"logs": [{"ts": r[0], "user": r[1], "action": r[2], "details": r[3]} for r in res]}
+
+@app.get("/api/users")
+async def get_users(u=Depends(get_current_user)):
+    if u["role"] != "superadmin": raise HTTPException(status_code=403)
+    users = load_users()
+    return [{"username": name, "role": d.get("role")} for name, d in users.items()]
+
+@app.post("/api/users")
+async def add_user(username: str=Body(...), password: str=Body(...), u=Depends(get_current_user)):
+    if u["role"] != "superadmin": raise HTTPException(status_code=403)
+    users = load_users(); users[username] = {"password": pwd_context.hash(password), "role": "admin"}
+    save_users(users); log_action(u["username"], "ADD_USER", username); return {"status": "success"}
+
+@app.delete("/api/users/{t}")
+async def del_user(t: str, u=Depends(get_current_user)):
+    if u["role"] != "superadmin": raise HTTPException(status_code=403)
+    users = load_users(); del users[t]; save_users(users); log_action(u["username"], "DEL_USER", t); return {"status": "success"}
+
+@app.get("/api/settings")
+async def get_set(u=Depends(get_current_user)):
+    return json.load(open(CONFIG_FILE, "r")) if os.path.exists(CONFIG_FILE) else {}
+
+@app.post("/api/settings")
+async def save_set(data: dict=Body(...), u=Depends(get_current_user)):
+    if u["role"] != "superadmin": raise HTTPException(status_code=403)
+    with open(CONFIG_FILE, "w") as f: json.dump(data, f)
+    return {"status": "success"}
+
+@app.post("/api/reload")
+async def reload_f(u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--reload"]); log_action(u["username"], "RELOAD", "System"); return {"result": res}
+
+@app.get("/api/snapshots/all")
+async def get_snaps(u=Depends(get_current_user)):
+    return {"snapshots": sorted(os.listdir(SNAPSHOTS_DIR), reverse=True)} if os.path.exists(SNAPSHOTS_DIR) else {"snapshots": []}
+
+@app.post("/api/snapshots/restore/{n}")
+async def restore_sn(n: str, u=Depends(get_current_user)):
+    if ".." in n or "/" in n: raise HTTPException(status_code=400, detail="Invalid snapshot name")
+    snap_path = os.path.join(SNAPSHOTS_DIR, n)
+    if not os.path.exists(snap_path): raise HTTPException(status_code=404, detail="Snapshot not found")
+    shutil.copytree(snap_path, "/etc/firewalld", dirs_exist_ok=True); run_cmd(["firewall-cmd", "--reload"])
+    log_action(u["username"], "RESTORE", n); return {"status": "success"}
+
