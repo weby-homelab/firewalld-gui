@@ -4,7 +4,7 @@
 
 Built for system administrators who want full control over server security through a convenient graphical interface without compromising system reliability.
 
-![Version](https://img.shields.io/badge/version-1.0.0--rc1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12-green.svg)
 ![React](https://img.shields.io/badge/react-18-61dafb.svg)
 

@@ -142,7 +142,7 @@ function App() {
   return (
     <div className="container-fluid">
       <header className="glass-card header">
-        <div className="brand"><h1>Firewalld-GUI</h1><span className="badge">v1.0.0-rc1</span></div>
+        <div className="brand"><h1>Firewalld-GUI</h1><span className="badge">v1.0.0</span></div>
         <nav className="view-nav">
           {["config", "monitoring", "snapshots", "admin", "settings"].map(v => (
             (v !== "settings" && v !== "admin" || user?.role === "superadmin") && 
