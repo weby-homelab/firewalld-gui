@@ -1,0 +1,265 @@
+import { useState, useEffect } from "react"
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import "./App.css"
+
+function App() {
+  const [token, setToken] = useState(localStorage.getItem("fm_token"))
+  const [user, setUser] = useState<any>(null)
+  const [view, setView] = useState("config")
+  const [monitorView, setMonitorView] = useState("drops")
+  const [status, setStatus] = useState<any>(null)
+  const [zones, setZones] = useState<string[]>([])
+  const [selectedZone, setSelectedZone] = useState<string>("public")
+  const [zoneDetails, setZoneDetails] = useState<any>(null)
+  const [ipsets, setIpsets] = useState<string[]>([])
+  const [selectedIpset, setSelectedIpset] = useState<string | null>(null)
+  const [ipsetDetails, setIpsetDetails] = useState<any>(null)
+  const [fwLogs, setFwLogs] = useState<any[]>([])
+  const [bannedIps, setBannedIps] = useState<any[]>([])
+  const [blacklistEntries, setBlacklistEntries] = useState<string[]>([])
+  const [snapshots, setSnapshots] = useState<string[]>([])
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
+  const [stats, setStats] = useState<any[]>([])
+  const [whois, setWhois] = useState<any>(null)
+  const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
+  const [loading, setLoading] = useState(false)
+  const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "" })
+  const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
+
+  const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
+  const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp"]
+
+  const logout = () => { localStorage.removeItem("fm_token"); setToken(null); setUser(null) }
+
+  const checkSetup = async () => {
+    try {
+      const res = await fetch("/api/auth/setup-needed");
+      const data = await res.json();
+      setSetupNeeded(data.setup_needed);
+    } catch (e) { console.error(e) }
+  }
+
+  const fetchProfile = async () => {
+    if (!token) return
+    try {
+      const res = await fetch("/api/auth/me", { headers: authHeaders })
+      if (res.ok) setUser(await res.json()); else logout()
+    } catch (e) { logout() }
+  }
+
+  const fetchData = async () => {
+    if (!token || !user) return
+    const f = async (u: string) => {
+        const r = await fetch(u, { headers: authHeaders })
+        if (r.status === 401) { logout(); return {} }
+        return r.json()
+    }
+    try {
+      if (view === "config") {
+        setStatus(await f("/api/status"))
+        setZones((await f("/api/zones/all")).zones || [])
+        setIpsets((await f("/api/ipsets/all")).ipsets || [])
+      }
+      if (view === "monitoring") {
+        setFwLogs((await f("/api/logs")).logs || [])
+        setBannedIps((await f("/api/fail2ban/status")).banned || [])
+        setStats((await f("/api/stats")).hourly || [])
+        const bl = await f("/api/ipset/blacklist/details")
+        setBlacklistEntries(bl.entries || [])
+      }
+      if (view === "snapshots") setSnapshots((await f("/api/snapshots/all")).snapshots || [])
+      if (view === "admin" && user.role === "superadmin") {
+        setAuditLogs((await f("/api/audit-logs")).logs || [])
+        const uData = await f("/api/users")
+        setUsers(Array.isArray(uData) ? uData : [])
+      }
+      if (view === "settings" && user.role === "superadmin") setTgConfig(await f("/api/settings") || { tg_token: "", tg_chat_id: "" })
+    } catch (e) { console.error(e) }
+  }
+
+  const apiAction = async (url: string, method: string, body?: any) => {
+    setLoading(true)
+    const res = await fetch(url, { method, headers: authHeaders, body: body ? JSON.stringify(body) : null })
+    if (res.ok) {
+        await fetchData();
+        if (selectedZone && view === "config") fetchZoneDetails(selectedZone);
+        if (selectedIpset && view === "config") fetchIpsetDetails(selectedIpset);
+    } else alert("Action failed")
+    setLoading(false)
+  }
+
+  useEffect(() => { checkSetup() }, [])
+  useEffect(() => { if (token) fetchProfile() }, [token])
+  useEffect(() => { if (token && user) fetchData() }, [token, view, user])
+
+  const fetchZoneDetails = async (z: string) => {
+    const res = await fetch("/api/zone/"+z+"/details", {headers:authHeaders})
+    if (res.ok) setZoneDetails(await res.json())
+  }
+
+  const fetchIpsetDetails = async (n: string) => {
+    const res = await fetch("/api/ipset/"+n+"/details", {headers:authHeaders})
+    if (res.ok) setIpsetDetails(await res.json())
+  }
+
+  useEffect(() => { if (token && user && selectedZone && view === "config") fetchZoneDetails(selectedZone) }, [token, user, selectedZone, view])
+  useEffect(() => { if (token && user && selectedIpset && view === "config") fetchIpsetDetails(selectedIpset) }, [token, user, selectedIpset, view])
+
+  useEffect(() => {
+    if (token && user && view === "monitoring") {
+      const timer = setInterval(fetchData, 15000)
+      return () => clearInterval(timer)
+    }
+  }, [token, user, view])
+
+  if (setupNeeded === true) return (
+    <div className="auth-screen">
+      <form className="glass-card auth-card" onSubmit={async (e:any)=>{
+        e.preventDefault();
+        const res = await fetch("/api/auth/setup", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: e.target.user.value, password: e.target.pass.value })
+        });
+        if (res.ok) { alert("Admin created! Log in now."); setSetupNeeded(false); }
+      }}>
+        <h2>Initial Setup</h2>
+        <p className="note">Create first Superadmin</p>
+        <input name="user" placeholder="Username" required />
+        <input name="pass" type="password" placeholder="Password" required />
+        <button className="btn-reload" type="submit">Create Admin</button>
+      </form>
+    </div>
+  )
+
+  if (!token) return <div className="auth-screen"><form className="glass-card auth-card" onSubmit={async (e:any)=>{
+    e.preventDefault(); const fd=new FormData(); fd.append("username", e.target.user.value); fd.append("password", e.target.pass.value);
+    const res = await fetch("/api/auth/login", {method:"POST", body:fd})
+    if(res.ok){ const d=await res.json(); localStorage.setItem("fm_token", d.access_token); setToken(d.access_token); }
+    else alert("Login failed")
+  }}><h2>Firewalld-GUI</h2><input name="user" placeholder="Username" /><input name="pass" type="password" placeholder="Password" /><button className="btn-reload">Login</button></form></div>
+
+  return (
+    <div className="container-fluid">
+      <header className="glass-card header">
+        <div className="brand"><h1>Firewalld-GUI</h1><span className="badge">v1.0.0-rc1</span></div>
+        <nav className="view-nav">
+          {["config", "monitoring", "snapshots", "admin", "settings"].map(v => (
+            (v !== "settings" && v !== "admin" || user?.role === "superadmin") && 
+            <button key={v} className={view===v?"nav-btn active":"nav-btn"} onClick={()=>setView(v)}>{v.charAt(0).toUpperCase()+v.slice(1)}</button>
+          ))}
+        </nav>
+        <div className="header-actions">
+          <div className="user-tag">{user?.username} ({user?.role})</div>
+          <button className="btn btn-reload" onClick={() => apiAction("/api/reload", "POST")} disabled={loading}>
+            {loading ? "Applying..." : "Apply Changes"}
+          </button>
+          <button className="btn-logout" onClick={logout}>Logout</button>
+        </div>
+      </header>
+
+      <main className="dashboard-grid">
+        {view === "config" && (
+          <>
+            <div className="side-pane">
+              <section className="glass-card"><h3>Status: <span className="text-success">{status?.firewalld_state}</span></h3></section>
+              <section className="glass-card"><h3>Zones</h3><div className="zone-list">{zones.map(z => (<button key={z} className={selectedZone===z?"zone-btn active":"zone-btn"} onClick={()=>{setSelectedZone(z);setSelectedIpset(null)}}>{z}</button>))}</div></section>
+              <section className="glass-card"><h3>IP Sets</h3><div className="add-form" style={{marginBottom:"10px"}}><input value={inputs.ipset} onChange={e=>setInputs({...inputs,ipset:e.target.value})} placeholder="New set..." /><button onClick={()=>{apiAction("/api/ipset/create","POST",{name:inputs.ipset});setInputs({...inputs,ipset:""})}}>+</button></div>
+                <div className="zone-list">{ipsets.map(s => (<button key={s} className={selectedIpset===s?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedIpset(s);setSelectedZone("")}}>{s}</button>))}</div></section>
+            </div>
+            <div className="main-pane">
+              {selectedZone && <section className="glass-card details-view"><h2>Zone: {selectedZone}</h2><div className="details-grid">
+                <div className="detail-group"><h4>Ports</h4><div className="tag-container">
+                  {zoneDetails?.ports?.map((p:string)=><span key={p} className="tag port">{p} {!protectedPorts.includes(p) && <i onClick={()=>apiAction("/api/zone/"+selectedZone+"/port/"+encodeURIComponent(p),"DELETE")}>×</i>}</span>)}
+                  <div className="add-form"><input value={inputs.port} onChange={e=>setInputs({...inputs,port:e.target.value})} placeholder="80/tcp" /><button onClick={()=>{apiAction("/api/zone/"+selectedZone+"/port","POST",{port:inputs.port});setInputs({...inputs,port:""})}}>+</button></div>
+                </div></div>
+                <div className="detail-group"><h4>Port Forwarding</h4><div className="tag-container">
+                  {zoneDetails?.forward_ports?.map((f:string)=><span key={f} className="tag iface">{f} <i onClick={()=>apiAction("/api/zone/"+selectedZone+"/forward-port/"+encodeURIComponent(f),"DELETE")}>×</i></span>)}
+                  <div className="add-form"><input value={inputs.forward} onChange={e=>setInputs({...inputs,forward:e.target.value})} placeholder="port=80:proto=tcp:toport=8080" style={{width:"250px"}} /><button onClick={()=>{apiAction("/api/zone/"+selectedZone+"/forward-port","POST",{forward:inputs.forward});setInputs({...inputs,forward:""})}}>+</button></div>
+                </div></div>
+                <div className="detail-group"><h4>Rich Rules</h4>{zoneDetails?.rich_rules?.map((r:string,i:number)=>(<div key={i} className="rich-rule-item"><code>{r}</code><i onClick={()=>apiAction("/api/zone/"+selectedZone+"/rich-rule","DELETE",{rule:r})}>×</i></div>))}
+                  <div className="add-form"><input value={inputs.rule} onChange={e=>setInputs({...inputs,rule:e.target.value})} placeholder="rule..." style={{width:"100%"}} /><button onClick={()=>{apiAction("/api/zone/"+selectedZone+"/rich-rule","POST",{rule:inputs.rule});setInputs({...inputs,rule:""})}}>Add</button></div>
+                </div></div></section>}
+              {selectedIpset && <section className="glass-card details-view"><h2>IP Set: {selectedIpset}</h2><div className="detail-group"><h4>Entries</h4><div className="tag-container">
+                {ipsetDetails?.entries?.map((e:string)=><span key={e} className={selectedIpset==="whitelist"?"tag port":"tag service"}>{e} <i onClick={()=>apiAction("/api/ipset/"+selectedIpset+"/entry/"+e,"DELETE")}>×</i></span>)}
+                <div className="add-form"><input value={inputs.ipentry} onChange={e=>setInputs({...inputs,ipentry:e.target.value})} placeholder="1.2.3.4" /><button onClick={()=>{apiAction("/api/ipset/"+selectedIpset+"/entry","POST",{entry:inputs.ipentry});setInputs({...inputs,ipentry:""})}}>Add</button></div>
+              </div></div></section>}
+            </div>
+          </>
+        )}
+
+        {view === "monitoring" && (
+          <div className="wide-pane">
+            <section className="glass-card"><h2>Attack Statistics (Last 24h)</h2><div style={{height:"180px", marginTop:"15px"}}><ResponsiveContainer width="100%" height="100%"><LineChart data={stats}><XAxis dataKey="hour" stroke="#666"/><YAxis stroke="#666"/><Tooltip/><Line type="monotone" dataKey="count" stroke="#ff4444" strokeWidth={3}/></LineChart></ResponsiveContainer></div></section>
+            
+            <section className="glass-card">
+              <div className="sub-nav">
+                <button className={monitorView === "drops" ? "sub-nav-btn active" : "sub-nav-btn"} onClick={() => setMonitorView("drops")}>Live Drops</button>
+                <button className={monitorView === "manual" ? "sub-nav-btn active" : "sub-nav-btn"} onClick={() => setMonitorView("manual")}>Manual Blacklist</button>
+                <button className={monitorView === "fail2ban" ? "sub-nav-btn active" : "sub-nav-btn"} onClick={() => setMonitorView("fail2ban")}>Fail2Ban</button>
+              </div>
+
+              {monitorView === "drops" && (
+                <div className="table-container"><table className="log-table"><thead><tr><th>Time</th><th>Source IP</th><th>Proto</th><th>Port</th><th>Action</th></tr></thead>
+                <tbody>{fwLogs.map((l,i)=>(<tr key={i}><td>{l.time}</td><td className="text-danger clickable" onClick={async ()=>{const r=await (await fetch("/api/whois/"+l.src,{headers:authHeaders})).json();setWhois(r)}}>{l.src}</td><td>{l.proto}</td><td>{l.port}</td>
+                  <td><button className="btn-mini-ban" onClick={()=>apiAction("/api/quick-ban","POST",{ip:l.src})}>🚫 Ban IP</button></td></tr>))}
+                  {fwLogs.length === 0 && <tr><td colSpan={5} className="empty">No drops recorded</td></tr>}
+                </tbody></table></div>
+              )}
+
+              {monitorView === "manual" && (
+                <div className="tag-container" style={{marginTop: "20px"}}>
+                  {blacklistEntries.map(ip => (<span key={ip} className="tag banned">{ip} <i onClick={()=>apiAction("/api/ipset/blacklist/entry/"+ip, "DELETE")}>×</i></span>))}
+                  {blacklistEntries.length === 0 && <p className="empty">Empty blacklist</p>}
+                </div>
+              )}
+
+              {monitorView === "fail2ban" && (
+                <div className="tag-container" style={{marginTop: "20px"}}>
+                  {bannedIps.map((b,i)=>(<span key={i} className="tag banned">{b.ip} ({b.jail}) <i onClick={()=>apiAction("/api/fail2ban/unban","POST",{ip:b.ip,jail:b.jail})}>×</i></span>))}
+                  {bannedIps.length === 0 && <p className="empty">No active bans from Fail2Ban</p>}
+                </div>
+              )}
+            </section>
+
+            {whois && <div className="whois-modal" onClick={()=>setWhois(null)}><div className="glass-card whois-content" onClick={e=>e.stopPropagation()}><h3>Whois: {whois.ip || whois.query}</h3>
+              <div className="whois-data"><p><b>Location:</b> {whois.country}, {whois.city}</p><p><b>ISP:</b> {whois.isp}</p><p><b>Org:</b> {whois.org}</p><button className="btn-reload" onClick={()=>setWhois(null)}>Close</button></div></div></div>}
+          </div>
+        )}
+
+        {view === "admin" && (
+          <div className="wide-pane">
+            <section className="glass-card"><h2>Audit Logs</h2><div className="table-container"><table className="log-table"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
+              <tbody>{auditLogs.map((l,i)=>(<tr key={i}><td>{l.ts?.split("T")[1]?.slice(0,8)}</td><td>{l.user}</td><td><b>{l.action}</b></td><td style={{fontSize:"0.85em"}}>{l.details}</td></tr>))}
+              {auditLogs.length === 0 && <tr><td colSpan={4} className="empty">No logs</td></tr>}
+              </tbody></table></div></section>
+            <section className="glass-card"><h2>User Management</h2><div className="tag-container">
+              {users.map(u => (<span key={u.username} className="tag port">{u.username} ({u.role}) {u.role !== "superadmin" && <i onClick={()=>apiAction("/api/users/"+u.username,"DELETE")}>×</i>}</span>))}
+              <div className="add-form"><input value={inputs.user} onChange={e=>setInputs({...inputs,user:e.target.value})} placeholder="User" /><input type="password" value={inputs.pass} onChange={e=>setInputs({...inputs,pass:e.target.value})} placeholder="Pass" /><button onClick={()=>{apiAction("/api/users","POST",{username:inputs.user, password:inputs.pass});setInputs({...inputs,user:"",pass:""})}}>+ Add</button></div>
+            </div></section>
+          </div>
+        )}
+
+        {view === "settings" && (
+          <div className="wide-pane">
+            <section className="glass-card"><h2>Settings</h2><div className="add-form-col">
+              <label>Telegram Bot Token</label><input value={tgConfig.tg_token} onChange={e=>setTgConfig({...tgConfig,tg_token:e.target.value})} placeholder="Token" />
+              <label>Telegram Chat ID</label><input value={tgConfig.tg_chat_id} onChange={e=>setTgConfig({...tgConfig,tg_chat_id:e.target.value})} placeholder="Chat ID" />
+              <button className="btn-reload" onClick={()=>apiAction("/api/settings","POST",tgConfig)} style={{width: "150px", marginTop: "10px"}}>Save Settings</button>
+            </div></section>
+          </div>
+        )}
+
+        {view === "snapshots" && (
+          <div className="wide-pane"><section className="glass-card"><h2>Time Machine (Snapshots)</h2><div className="snap-list">
+            {snapshots.map(s=>(<div key={s} className="snap-item"><span>{s}</span><button className="btn-reload" onClick={()=>{if(confirm("Restore?"))apiAction("/api/snapshots/restore/"+s,"POST")}} style={{background:"#ffaa00"}}>Restore</button></div>))}
+            {snapshots.length === 0 && <p className="empty">No snapshots recorded yet.</p>}
+          </div></section></div>
+        )}
+      </main>
+      <footer className="footer">© 2026 Weby Homelab • Running on AlmaLinux 10</footer>
+    </div>
+  )
+}
+
+export default App
