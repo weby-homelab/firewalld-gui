@@ -4,7 +4,7 @@
 
 Створена для системних адміністраторів, які хочуть мати повний контроль над безпекою сервера через зручний графічний інтерфейс, не втрачаючи при цьому системної надійності.
 
-![Version](https://img.shields.io/badge/version-1.0.0--rc1-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.12-green.svg)
 ![React](https://img.shields.io/badge/react-18-61dafb.svg)
 
