@@ -1,3 +1,14 @@
+<p align="center">
+  <a href="README_ENG.md">
+    <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
+  </a>
+  <a href="README.md">
+    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
+  </a>
+</p>
+
+<br>
+
 # 🛡️ Firewalld-GUI (Weby Homelab)
 
 **Firewalld-GUI** is a powerful, modern, and secure web dashboard for managing the system firewall `firewalld` and `Fail2Ban` on Linux servers (AlmaLinux, RHEL, CentOS, Ubuntu).
