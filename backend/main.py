@@ -102,6 +102,9 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
     s = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-services"])
     r = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-rich-rules"])
     f = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-forward-ports"])
+    i = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-interfaces"])
+    src = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-sources"])
+    
     # New features: Masquerade and ICMP blocks
     masq = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--query-masquerade"]).strip()
     icmp = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-icmp-blocks"])
@@ -111,6 +114,8 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
         "services": s.split(), 
         "rich_rules": r.split("\n") if r else [], 
         "forward_ports": f.split("\n") if f else [],
+        "interfaces": i.split(),
+        "sources": src.split(),
         "masquerade": masq == "yes",
         "icmp_blocks": icmp.split()
     }
@@ -125,7 +130,7 @@ async def add_item(name: str, type: str, data: dict = Body(None), u=Depends(get_
     # Data can be None for masquerade
     val = data.get("value") if data else None
     if not val and data:
-        val = data.get("port") or data.get("service") or data.get("rule") or data.get("forward")
+        val = data.get("port") or data.get("service") or data.get("rule") or data.get("forward") or data.get("interface") or data.get("source")
         
     shutil.copytree("/etc/firewalld", SNAPSHOTS_DIR+"/auto_"+datetime.now().strftime("%H%M%S"), dirs_exist_ok=True)
     
@@ -248,6 +253,25 @@ async def get_stats(u=Depends(get_current_user)):
     except Exception as e:
         print(f"Stats Error: {e}")
         return {"hourly": []}
+
+@app.get("/api/policies/all")
+async def get_all_policies(u=Depends(get_current_user)):
+    """Return all available policies."""
+    policies_raw = run_cmd(["firewall-cmd", "--permanent", "--get-policies"])
+    return {"policies": policies_raw.split() if policies_raw else []}
+
+@app.get("/api/policy/{name}/details")
+async def get_policy_details(name: str, u=Depends(get_current_user)):
+    """Return details of a specific policy (ingress, egress, target)."""
+    ingress = run_cmd(["firewall-cmd", "--permanent", "--policy=" + name, "--get-ingress-zones"])
+    egress = run_cmd(["firewall-cmd", "--permanent", "--policy=" + name, "--get-egress-zones"])
+    target = run_cmd(["firewall-cmd", "--permanent", "--policy=" + name, "--get-target"])
+    
+    return {
+        "ingress_zones": ingress.split() if ingress else [],
+        "egress_zones": egress.split() if egress else [],
+        "target": target.strip() if target else "default"
+    }
 
 @app.post("/api/quick-ban")
 async def quick_ban(ip: str=Body(..., embed=True), u=Depends(get_current_user)):

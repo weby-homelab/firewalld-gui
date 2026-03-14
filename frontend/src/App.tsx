@@ -24,11 +24,14 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "" })
+  const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
   const [showSafeMigrate, setShowSafeMigrate] = useState(false)
-  const [migrateStep, setMigrateStep] = useState(1) // 1: Add new, 2: Can delete old
+  const [migrateStep, setMigrateStep] = useState(1)
   const [availableIcmpTypes, setAvailableIcmpTypes] = useState<string[]>([])
+  const [policies, setPolicies] = useState<string[]>([])
+  const [selectedPolicy, setSelectedPolicy] = useState<string | null>(null)
+  const [policyDetails, setPolicyDetails] = useState<any>(null)
 
   const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
   const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp"]
@@ -63,6 +66,7 @@ function App() {
         setStatus(await f("/api/status"))
         setZones((await f("/api/zones/all")).zones || [])
         setIpsets((await f("/api/ipsets/all")).ipsets || [])
+        setPolicies((await f("/api/policies/all")).policies || [])
         if (availableIcmpTypes.length === 0) {
             setAvailableIcmpTypes((await f("/api/icmptypes/all")).icmptypes || [])
         }
@@ -109,8 +113,14 @@ function App() {
     if (res.ok) setIpsetDetails(await res.json())
   }
 
+  const fetchPolicyDetails = async (p: string) => {
+    const res = await fetch("/api/policy/"+p+"/details", {headers:authHeaders})
+    if (res.ok) setPolicyDetails(await res.json())
+  }
+
   useEffect(() => { if (token && user && selectedZone && view === "config") fetchZoneDetails(selectedZone) }, [token, user, selectedZone, view])
   useEffect(() => { if (token && user && selectedIpset && view === "config") fetchIpsetDetails(selectedIpset) }, [token, user, selectedIpset, view])
+  useEffect(() => { if (token && user && selectedPolicy && view === "config") fetchPolicyDetails(selectedPolicy) }, [token, user, selectedPolicy, view])
 
   useEffect(() => {
     if (token && user && view === "monitoring") {
@@ -169,9 +179,11 @@ function App() {
           <>
             <div className="side-pane">
               <section className="glass-card"><h3>Status: <span className="text-success">{status?.firewalld_state}</span></h3></section>
-              <section className="glass-card"><h3>Zones</h3><div className="zone-list">{zones.map(z => (<button key={z} className={selectedZone===z?"zone-btn active":"zone-btn"} onClick={()=>{setSelectedZone(z);setSelectedIpset(null)}}>{z}</button>))}</div></section>
+              <section className="glass-card"><h3>Zones</h3><div className="zone-list">{zones.map(z => (<button key={z} className={selectedZone===z?"zone-btn active":"zone-btn"} onClick={()=>{setSelectedZone(z);setSelectedIpset(null);setSelectedPolicy(null);}}>{z}</button>))}</div></section>
               <section className="glass-card"><h3>IP Sets</h3><div className="add-form" style={{marginBottom:"10px"}}><input value={inputs.ipset} onChange={e=>setInputs({...inputs,ipset:e.target.value})} placeholder="New set..." /><button onClick={()=>{apiAction("/api/ipset/create","POST",{name:inputs.ipset});setInputs({...inputs,ipset:""})}}>+</button></div>
-                <div className="zone-list">{ipsets.map(s => (<button key={s} className={selectedIpset===s?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedIpset(s);setSelectedZone("")}}>{s}</button>))}</div></section>
+                <div className="zone-list">{ipsets.map(s => (<button key={s} className={selectedIpset===s?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedIpset(s);setSelectedZone(null);setSelectedPolicy(null);}}>{s}</button>))}</div></section>
+              {policies.length > 0 && <section className="glass-card"><h3>Policies (Routing)</h3>
+                <div className="zone-list">{policies.map(p => (<button key={p} className={selectedPolicy===p?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedPolicy(p);setSelectedZone(null);setSelectedIpset(null);}}>{p}</button>))}</div></section>}
             </div>
             <div className="main-pane">
               {selectedZone && <section className="glass-card details-view">
@@ -194,6 +206,36 @@ function App() {
                     </div>
                 </div>
                 <div className="details-grid">
+                
+                {/* --- New Section: Interfaces & Sources --- */}
+                <div className="detail-group">
+                  <div className="group-header">
+                    <h4>Routing & Binding (Interfaces & Sources)</h4>
+                  </div>
+                  <div className="tag-container" style={{marginBottom: "10px"}}>
+                    {zoneDetails?.interfaces?.map((iface: string) => (
+                      <span key={iface} className="tag iface" title="Network Interface">
+                        <i className="fas fa-network-wired mr-1"></i> {iface} 
+                        <i onClick={() => apiAction("/api/zone/" + selectedZone + "/interface/" + encodeURIComponent(iface), "DELETE")}>×</i>
+                      </span>
+                    ))}
+                    {zoneDetails?.sources?.map((src: string) => (
+                      <span key={src} className="tag port" title="Source IP/Subnet">
+                        <i className="fas fa-satellite-dish mr-1"></i> {src} 
+                        <i onClick={() => apiAction("/api/zone/" + selectedZone + "/source/" + encodeURIComponent(src), "DELETE")}>×</i>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="add-form" style={{maxWidth: '500px'}}>
+                    <input value={inputs.interface} onChange={e => setInputs({ ...inputs, interface: e.target.value })} placeholder="Interface (e.g. eth0)" />
+                    <button onClick={() => { if(inputs.interface) { apiAction("/api/zone/" + selectedZone + "/interface", "POST", { value: inputs.interface }); setInputs({ ...inputs, interface: "" }); } }}>+ Iface</button>
+                    <div style={{width: '20px'}}></div>
+                    <input value={inputs.source} onChange={e => setInputs({ ...inputs, source: e.target.value })} placeholder="Source (e.g. 10.0.0.0/24)" />
+                    <button onClick={() => { if(inputs.source) { apiAction("/api/zone/" + selectedZone + "/source", "POST", { value: inputs.source }); setInputs({ ...inputs, source: "" }); } }}>+ Source</button>
+                  </div>
+                </div>
+                {/* ----------------------------------------- */}
+
                 <div className="detail-group">
                   <h4>ICMP Blocks</h4>
                   <div className="tag-container">
@@ -280,6 +322,44 @@ function App() {
                 {ipsetDetails?.entries?.map((e:string)=><span key={e} className={selectedIpset==="whitelist"?"tag port":"tag service"}>{e} <i onClick={()=>apiAction("/api/ipset/"+selectedIpset+"/entry/"+e,"DELETE")}>×</i></span>)}
                 <div className="add-form"><input value={inputs.ipentry} onChange={e=>setInputs({...inputs,ipentry:e.target.value})} placeholder="1.2.3.4" /><button onClick={()=>{apiAction("/api/ipset/"+selectedIpset+"/entry","POST",{entry:inputs.ipentry});setInputs({...inputs,ipentry:""})}}>Add</button></div>
               </div></div></section>}
+              
+              {selectedPolicy && <section className="glass-card details-view">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px'}}>
+                    <h2 style={{margin: 0, border: 'none', padding: 0}}>Policy: {selectedPolicy}</h2>
+                </div>
+                <div className="details-grid">
+                    <div className="detail-group">
+                        <h4>Target Action</h4>
+                        <div className="tag-container">
+                            <span className={`tag ${policyDetails?.target === 'ACCEPT' ? 'port' : policyDetails?.target === 'DROP' ? 'banned' : 'service'}`} style={{fontSize: '1.1em', fontWeight: 'bold'}}>
+                                {policyDetails?.target || 'DEFAULT'}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="detail-group">
+                        <div className="group-header"><h4>Ingress Zones (Source)</h4></div>
+                        <div className="tag-container">
+                            {policyDetails?.ingress_zones?.map((z: string) => (
+                                <span key={z} className="tag iface"><i className="fas fa-sign-in-alt mr-1"></i> {z}</span>
+                            ))}
+                            {!policyDetails?.ingress_zones?.length && <span className="text-gray-500 italic text-sm">ANY</span>}
+                        </div>
+                    </div>
+                    <div className="detail-group">
+                        <div className="group-header"><h4>Egress Zones (Destination)</h4></div>
+                        <div className="tag-container">
+                            {policyDetails?.egress_zones?.map((z: string) => (
+                                <span key={z} className="tag service"><i className="fas fa-sign-out-alt mr-1"></i> {z}</span>
+                            ))}
+                            {!policyDetails?.egress_zones?.length && <span className="text-gray-500 italic text-sm">ANY</span>}
+                        </div>
+                    </div>
+                    <p className="note text-gray-500 text-sm mt-4">
+                        <i className="fas fa-info-circle mr-1"></i> 
+                        Policies are used to filter traffic flowing <b>between</b> different zones. Manage them via CLI (e.g. <code>firewall-cmd --new-policy</code>) to see them here.
+                    </p>
+                </div>
+              </section>}
             </div>
           </>
         )}
