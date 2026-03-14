@@ -59,7 +59,35 @@ h1, h2, h3, h4 { margin: 0 0 15px 0; font-weight: 500; }
 .zone-btn.active { border-color: #00e676; color: #00e676; background: rgba(0,230,118,0.05); }
 .ipset-active { border-color: #00b0ff !important; color: #00b0ff !important; background: rgba(0,176,255,0.05) !important; }
 
-.tag-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.nat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+.nat-card { 
+  background: rgba(255, 255, 255, 0.05); 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  border-radius: 10px; 
+  padding: 10px 15px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  transition: all 0.2s;
+}
+.nat-card:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(99, 102, 241, 0.3); }
+.nat-route { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
+.ext-port { color: #facc15; font-weight: bold; }
+.proto-badge { background: #4f46e5; color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+.int-port { color: #10b981; font-weight: bold; }
+.int-addr { color: #94a3b8; font-size: 0.85em; }
+.nat-route i { color: #6366f1; opacity: 0.6; }
+
+.add-nat-form { background: rgba(0, 0, 0, 0.2); padding: 15px; border-radius: 12px; border: 1px dashed #444; }
+.add-nat-form .input-group { display: grid; grid-template-columns: 1fr 80px 1fr; gap: 8px; margin-bottom: 10px; }
+.add-nat-form input, .add-nat-form select { background: #111; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; font-size: 0.85em; }
+.add-nat-form input:focus { border-color: #6366f1; outline: none; }
+.btn-add-full { width: 100%; background: #6366f1; color: white; border: none; padding: 8px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+.btn-add-full:hover { background: #4f46e5; }
+
+.btn-del { background: none; border: none; color: #ef4444; font-size: 1.2em; cursor: pointer; opacity: 0.6; transition: opacity 0.2s; padding: 0 5px; }
+.btn-del:hover { opacity: 1; }
+
 .tag { font-size: 0.85em; padding: 6px 12px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; word-break: break-all; }
 .tag i { cursor: pointer; opacity: 0.4; font-style: normal; font-size: 1.2em; line-height: 1; padding: 0 2px; }
 .tag i:hover { opacity: 1; color: #ff3d00; }

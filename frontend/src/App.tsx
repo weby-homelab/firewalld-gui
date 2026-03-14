@@ -173,10 +173,47 @@ function App() {
                   {zoneDetails?.ports?.map((p:string)=><span key={p} className="tag port">{p} {!protectedPorts.includes(p) && <i onClick={()=>apiAction("/api/zone/"+selectedZone+"/port/"+encodeURIComponent(p),"DELETE")}>×</i>}</span>)}
                   <div className="add-form"><input value={inputs.port} onChange={e=>setInputs({...inputs,port:e.target.value})} placeholder="80/tcp" /><button onClick={()=>{apiAction("/api/zone/"+selectedZone+"/port","POST",{port:inputs.port});setInputs({...inputs,port:""})}}>+</button></div>
                 </div></div>
-                <div className="detail-group"><h4>Port Forwarding</h4><div className="tag-container">
-                  {zoneDetails?.forward_ports?.map((f:string)=><span key={f} className="tag iface">{f} <i onClick={()=>apiAction("/api/zone/"+selectedZone+"/forward-port/"+encodeURIComponent(f),"DELETE")}>×</i></span>)}
-                  <div className="add-form"><input value={inputs.forward} onChange={e=>setInputs({...inputs,forward:e.target.value})} placeholder="port=80:proto=tcp:toport=8080" style={{width:"250px"}} /><button onClick={()=>{apiAction("/api/zone/"+selectedZone+"/forward-port","POST",{forward:inputs.forward});setInputs({...inputs,forward:""})}}>+</button></div>
-                </div></div>
+                <div className="detail-group">
+                  <h4>Port Forwarding (NAT)</h4>
+                  <div className="nat-list">
+                    {zoneDetails?.forward_ports?.map((f: string) => {
+                      const m = f.match(/port=(\d+):proto=(\w+):toport=(\d+):toaddr=(.*)/) || f.match(/port=(\d+):proto=(\w+):toport=(\d+)/);
+                      return (
+                        <div key={f} className="nat-card">
+                          <div className="nat-route">
+                            <span className="ext-port">{m ? m[1] : f}</span>
+                            <span className="proto-badge">{m ? m[2].toUpperCase() : 'TCP'}</span>
+                            <i className="fas fa-arrow-right-long"></i>
+                            <span className="int-port">{m ? m[3] : ''}</span>
+                            {m && m[4] && <span className="int-addr">@{m[4]}</span>}
+                          </div>
+                          <button className="btn-del" onClick={() => apiAction("/api/zone/" + selectedZone + "/forward-port/" + encodeURIComponent(f), "DELETE")}>×</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="add-nat-form">
+                    <div className="input-group">
+                      <input type="number" placeholder="Ext Port" id="nat-ext" />
+                      <select id="nat-proto">
+                        <option value="tcp">TCP</option>
+                        <option value="udp">UDP</option>
+                      </select>
+                      <input type="number" placeholder="Int Port" id="nat-int" />
+                      <input type="text" placeholder="Int IP (Optional)" id="nat-ip" />
+                    </div>
+                    <button className="btn-add-full" onClick={() => {
+                      const ext = (document.getElementById('nat-ext') as HTMLInputElement).value;
+                      const proto = (document.getElementById('nat-proto') as HTMLSelectElement).value;
+                      const int = (document.getElementById('nat-int') as HTMLInputElement).value;
+                      const ip = (document.getElementById('nat-ip') as HTMLInputElement).value;
+                      if (!ext || !int) return alert("Ports required");
+                      let val = `port=${ext}:proto=${proto}:toport=${int}`;
+                      if (ip) val += `:toaddr=${ip}`;
+                      apiAction("/api/zone/" + selectedZone + "/forward-port", "POST", { forward: val });
+                    }}>Add NAT Rule</button>
+                  </div>
+                </div>
                 <div className="detail-group"><h4>Rich Rules</h4>{zoneDetails?.rich_rules?.map((r:string,i:number)=>(<div key={i} className="rich-rule-item"><code>{r}</code><i onClick={()=>apiAction("/api/zone/"+selectedZone+"/rich-rule","DELETE",{rule:r})}>×</i></div>))}
                   <div className="add-form"><input value={inputs.rule} onChange={e=>setInputs({...inputs,rule:e.target.value})} placeholder="rule..." style={{width:"100%"}} /><button onClick={()=>{apiAction("/api/zone/"+selectedZone+"/rich-rule","POST",{rule:inputs.rule});setInputs({...inputs,rule:""})}}>Add</button></div>
                 </div></div></section>}
