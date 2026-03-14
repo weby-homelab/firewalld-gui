@@ -197,7 +197,7 @@ function App() {
                 <div className="detail-group">
                   <h4>Port Forwarding (NAT)</h4>
                   <div className="nat-list">
-                    {zoneDetails?.forward_ports?.map((f: string) => {
+                    {zoneDetails?.forward_ports?.filter((f: string) => f.trim() !== "").map((f: string) => {
                       const m = f.match(/port=(\d+):proto=(\w+):toport=(\d+):toaddr=(.*)/) || f.match(/port=(\d+):proto=(\w+):toport=(\d+)/);
                       return (
                         <div key={f} className="nat-card">

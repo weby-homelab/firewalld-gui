@@ -60,6 +60,9 @@ body {
 .zone-btn.active { border-color: var(--success); color: var(--success); background: rgba(0,230,118,0.05); }
 .ipset-active { border-color: var(--info) !important; color: var(--info) !important; background: rgba(0,176,255,0.05) !important; }
 
+.group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.detail-group h4 { margin: 0; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; }
+
 /* Monitoring View */
 .sub-nav { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
 .sub-nav-btn {
@@ -84,11 +87,12 @@ body {
 .tag.port { border-left: 3px solid var(--success); }
 .tag.service { border-left: 3px solid var(--info); }
 .tag.banned { border-left: 3px solid var(--danger); background: rgba(255,61,0,0.05); }
-.tag.protected { border-left: 3px solid var(--warning); background: rgba(245,158,11,0.05); }
+.tag.protected { border-left: 3px solid var(--warning); background: rgba(245, 158, 11, 0.05); }
 .tag i { cursor: pointer; opacity: 0.5; font-style: normal; }
 .tag i:hover { opacity: 1; color: var(--danger); }
+.mini-lock { font-size: 0.75em; color: var(--warning); margin-left: 2px; }
 
-/* NAT & Rich Rules */
+/* Port Forwarding */
 .nat-list { display: flex; flex-direction: column; gap: 8px; }
 .nat-card {
   background: rgba(255,255,255,0.04); border: 1px solid var(--card-border);
@@ -99,38 +103,46 @@ body {
 .proto-badge { background: var(--primary); color: white; font-size: 0.7em; padding: 2px 6px; border-radius: 4px; }
 .int-port { color: var(--success); font-weight: bold; }
 
+.add-nat-form { background: rgba(0, 0, 0, 0.15); padding: 15px; border-radius: 12px; border: 1px dashed #444; margin-top: 10px; }
+.add-nat-form .input-group { display: grid; grid-template-columns: 1fr 100px 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+
+/* Rich Rules */
 .rich-rule-item {
   background: rgba(0,0,0,0.2); border: 1px solid var(--card-border);
   padding: 10px 15px; border-radius: 8px; margin-bottom: 8px;
   display: flex; justify-content: space-between; align-items: center; font-size: 0.8em;
 }
 
-/* Forms */
+/* Forms & Inputs */
 .add-form { display: flex; gap: 8px; }
-.add-form-col { display: flex; flex-direction: column; gap: 10px; max-width: 400px; }
-.add-form-col label { font-size: 0.8em; color: var(--text-muted); font-weight: bold; }
-input { background: #111; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; }
-
-/* Snapshots */
-.snap-list { display: flex; flex-direction: column; gap: 10px; }
-.snap-item {
-  background: rgba(255,255,255,0.03); padding: 12px 20px; border-radius: 10px;
-  display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--card-border);
-}
+input, select { background: #111; border: 1px solid #333; color: #fff; padding: 8px 12px; border-radius: 6px; font-size: 0.9em; }
+input:focus { border-color: var(--primary); outline: none; }
 
 /* Buttons */
 .btn-reload { background: var(--primary); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+.btn-add-full { width: 100%; background: var(--primary); color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 5px; }
+.btn-add-full:hover { background: var(--primary-hover); }
+.btn-small-link { background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); color: var(--primary); font-size: 0.75em; cursor: pointer; padding: 4px 10px; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+.btn-small-link:hover { background: rgba(99, 102, 241, 0.2); border-color: var(--primary); }
 .btn-mini-ban { background: rgba(255,61,0,0.1); color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 5px; font-size: 0.8em; cursor: pointer; }
 .btn-logout { background: none; border: 1px solid var(--card-border); color: var(--danger); padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+
+/* Modals */
+.whois-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.whois-content { max-width: 500px; width: 90%; }
+
+/* Snapshots */
+.snap-list { display: flex; flex-direction: column; gap: 10px; }
+.snap-item { background: rgba(255,255,255,0.03); padding: 12px 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--card-border); }
 
 /* Utils */
 .text-success { color: var(--success); }
 .text-danger { color: var(--danger); }
-.clickable { cursor: pointer; }
 .empty { text-align: center; padding: 40px; color: var(--text-muted); font-style: italic; }
 .footer { margin-top: 40px; text-align: center; color: var(--text-muted); font-size: 0.8em; padding-bottom: 20px; }
 
 @media (max-width: 1024px) {
   .dashboard-grid { grid-template-columns: 1fr; }
   .header { flex-direction: column; gap: 15px; }
+  .add-nat-form .input-group { grid-template-columns: 1fr 1fr; }
 }
