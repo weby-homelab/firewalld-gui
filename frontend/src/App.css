@@ -88,7 +88,15 @@ h1, h2, h3, h4 { margin: 0 0 15px 0; font-weight: 500; }
 .btn-del { background: none; border: none; color: #ef4444; font-size: 1.2em; cursor: pointer; opacity: 0.6; transition: opacity 0.2s; padding: 0 5px; }
 .btn-del:hover { opacity: 1; }
 
-.tag { font-size: 0.85em; padding: 6px 12px; border-radius: 6px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 8px; word-break: break-all; }
+.group-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.btn-small-link { background: none; border: none; color: #6366f1; font-size: 0.75em; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: bold; opacity: 0.8; }
+.btn-small-link:hover { opacity: 1; text-decoration: underline; }
+
+.tag.protected { border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.05); }
+.mini-lock { font-size: 0.7em; margin-left: 5px; color: #f59e0b; opacity: 0.6; }
+
+.migrate-workflow .note { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; font-size: 0.9em; line-height: 1.4; color: #ccc; }
+.text-success { color: #10b981 !important; }
 .tag i { cursor: pointer; opacity: 0.4; font-style: normal; font-size: 1.2em; line-height: 1; padding: 0 2px; }
 .tag i:hover { opacity: 1; color: #ff3d00; }
 .port { border-left: 3px solid #00e676; }
