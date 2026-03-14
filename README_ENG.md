@@ -3,71 +3,76 @@
     <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
   </a>
   <a href="README.md">
-    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
+    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Ukrainian version">
   </a>
 </p>
 
 <br>
 
 # 🛡️ Firewalld-GUI (Weby Homelab)
+*Modern, Fast, and Aesthetic Linux Network Security Management.*
 
-**Firewalld-GUI** is a powerful, modern, and secure web dashboard for managing the system firewall `firewalld` and `Fail2Ban` on Linux servers (AlmaLinux, RHEL, CentOS, Ubuntu).
+[![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![System](https://img.shields.io/badge/system-AlmaLinux_|_Ubuntu_|_RHEL-red.svg)]()
 
-Built for system administrators who want full control over server security through a convenient graphical interface without compromising system reliability.
+**Firewalld-GUI** is a powerful web interface for managing `firewalld` and `Fail2Ban`, built for system administrators who value their time and want a complete visual picture of server security. It transforms complex console commands into an intuitive dashboard with real-time analytics.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.12-green.svg)
-![React](https://img.shields.io/badge/react-18-61dafb.svg)
+---
+
+## 🧩 System Architecture
+
+```mermaid
+graph TD
+    User((Administrator)) -->|HTTPS / JWT| UI[Web Dashboard]
+    
+    subgraph "Firewalld-GUI Backend"
+        UI -->|API Requests| FastAPI[FastAPI Service]
+        FastAPI -->|Exec| FWCMD[firewall-cmd Engine]
+        FastAPI -->|Exec| F2BCMD[fail2ban-client]
+        FastAPI -->|Log Parser| LOGS[System Logs]
+    end
+
+    subgraph "System Layer"
+        FWCMD -->|Manage Zones/Ports| FW[Firewalld Daemon]
+        F2BCMD -->|Active Bans| F2B[Fail2Ban Service]
+        FW -->|Apply| IPT[nftables / iptables]
+    end
+
+    FastAPI -->|Persistence| JSON[(users.json / config.json)]
+    FastAPI -->|Stats| DB[(stats.db SQL)]
+```
 
 ---
 
 ## ✨ Key Features
 
-- 🌍 **Zones & Ports Management**: Quickly open/close ports and services with a single click.
-- 🚦 **Port Forwarding (NAT)**: Easy port forwarding configuration (e.g., from 80 to 8080).
-- 📜 **Rich Rules**: Full support for complex Firewalld rules.
-- 📦 **IP Sets**: Create and manage IP lists (blacklists and whitelists) for mass blocking.
-- 🛡️ **Fail2Ban Integration**: View active bans and unban IPs with one click.
-- 📊 **Live Monitoring**: Real-time monitoring of dropped packets and an attack graph for the last 24 hours.
-- 🚫 **Quick Ban**: Instantly send an attacking IP to the Blacklist directly from the log table.
-- 🔍 **Whois Lookup**: Built-in checker for the attacker's country and ISP.
-- 🕰️ **Time Machine (Snapshots)**: Automatic configuration backups before every change and 1-click rollback.
-- 👮 **Multi-User & Audit**: Role-based access (Superadmin / Admin) and detailed audit logs (who, when, and what changed).
-- 📱 **Responsive Design**: Modern UI (Glassmorphism), fully adapted for mobile devices.
-- 🚀 **Telegram Alerts**: Instant notifications about admin actions directly to your Telegram.
+- **🚀 Visual Rule Builder:** Create complex rules, manage ports, and services in one click without the risk of syntax errors.
+- **🕵️‍♂️ Fail2Ban Integration:** Full control over active bans. View jail status, attack history, and unban IPs directly from the interface.
+- **🕰️ Auto-Snapshots:** The system automatically backs up the current configuration before every change. You can always revert to a stable state.
+- **📈 Real-time Analytics:** Track statistics of rejected packets (DROP/REJECT) and attacker activity through integrated charts.
+- **🌍 IP Intelligence:** Built-in Whois service allows you to instantly identify the provider and country of origin for any blocked address.
 
 ---
 
-## 🚀 Installation (Docker)
+## 🛠️ Quick Start
 
-The project is deployed using Docker Compose. All services (Backend, Frontend, Nginx) are packaged and ready to run.
-
-### Requirements
-- OS: AlmaLinux 10 / Ubuntu 24.04 / RHEL
-- Installed: `docker`, `docker-compose-plugin`, `firewalld`, `fail2ban`
-
-### Setup
-1. Clone the repository:
+### Using Docker
 ```bash
-git clone https://github.com/weby-homelab/firewalld-gui.git
-cd firewalld-gui
+docker pull webyhomelab/firewalld-gui:latest
+docker run -d --name firewalld-gui --privileged --network host webyhomelab/firewalld-gui:latest
 ```
-2. Start the containers:
-```bash
-docker compose up -d --build
-```
-3. Open the dashboard in your browser on port `80` (or configure a Cloudflare Tunnel).
-
-### First Login (Smart Onboarding)
-Upon the first visit to the panel, the system will prompt you to create the first user (Superadmin). After that, all routes will be securely protected by a JWT token.
+*Note: `--privileged` and `--network host` are required for direct interaction with the firewalld daemon on the host.*
 
 ---
 
-## 🔒 Security
-- **Smart Whitelist**: Create an IP Set named `whitelist` and add your IP address to it. This will protect you from accidental "self-lockouts" both at the GUI level and the `firewalld` kernel level.
-- **Protected Ports**: The GUI automatically blocks the deletion of critical ports (22, 55222, 80, 443) to prevent you from losing access to the server.
+## 📋 System Requirements
+- **OS:** AlmaLinux 9+, RHEL 9+, Ubuntu 22.04/24.04.
+- **Dependencies:** `firewalld`, `fail2ban`, `python3.12+`.
+- **Access:** `root` privileges for system command execution.
 
 ---
-
-## 📄 License
-© 2026 Weby Homelab. All rights reserved. Developed with a passion for security.
+<p align="center">
+  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
+  <strong>✦ 2026 Weby Homelab ✦</strong>
+</p>
