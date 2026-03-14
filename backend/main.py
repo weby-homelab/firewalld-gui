@@ -144,22 +144,79 @@ async def create_ipset(name: str=Body(..., embed=True), u=Depends(get_current_us
 @app.get("/api/logs")
 async def get_fw_logs(u=Depends(get_current_user)):
     try:
-        with open("/var/log/messages", "r") as f: lines = f.readlines()
-        parsed = []; conn = sqlite3.connect(DB_FILE)
-        for line in lines[-300:]:
-            if "REJECT" in line or "DROP" in line:
-                src = re.search(r"SRC=([\d\.]+)", line); p = re.search(r"PROTO=(\w+)", line); d = re.search(r"DPT=(\d+)", line)
-                if src: 
-                    item = {"time": line[:16], "src": src.group(1), "proto": p.group(1) if p else "?", "port": d.group(1) if d else "?"}
-                    parsed.append(item)
-                    conn.execute("INSERT OR IGNORE INTO drops (ts, src, proto, port) VALUES (?, ?, ?, ?)", (datetime.now().isoformat(), item["src"], item["proto"], item["port"]))
-        conn.commit(); conn.close(); return {"logs": parsed[::-1][:40]}
-    except: return {"logs": []}
+        # Optimized log reading for Ubuntu/RHEL
+        log_files = ["/var/log/syslog", "/var/log/messages", "/var/log/kern.log"]
+        target_log = None
+        for lf in log_files:
+            if os.path.exists(lf):
+                target_log = lf
+                break
 
+        if not target_log: return {"logs": []}
+
+        # Use tail to get last 500 lines efficiently
+        cmd = ["tail", "-n", "500", target_log]
+        lines = subprocess.check_output(cmd, text=True).splitlines()
+
+        parsed = []; conn = sqlite3.connect(DB_FILE)
+        # Patterns for Firewalld dropped packets
+        # Example: "filter_IN_public_REJECT: " or "FINAL_REJECT: "
+        for line in lines:
+            if any(k in line for k in ["REJECT", "DROP", "DENIED"]):
+                src = re.search(r"SRC=([\d\.:a-fA-F]+)", line)
+                p = re.search(r"PROTO=(\w+)", line)
+                d = re.search(r"DPT=(\d+)", line)
+                if src:
+                    item = {
+                        "time": line[:16].strip(), 
+                        "src": src.group(1), 
+                        "proto": p.group(1) if p else "?", 
+                        "port": d.group(1) if d else "?"
+                    }
+                    parsed.append(item)
+                    # Use a truncated timestamp for the stats DB to avoid duplicates in the same second
+                    conn.execute("INSERT OR IGNORE INTO drops (ts, src, proto, port) VALUES (?, ?, ?, ?)", 
+                                (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), item["src"], item["proto"], item["port"]))
+        conn.commit(); conn.close(); return {"logs": parsed[::-1][:50]}
+    except Exception as e: 
+        print(f"Log Error: {e}")
+        return {"logs": []}
 @app.get("/api/stats")
 async def get_stats(u=Depends(get_current_user)):
-    conn = sqlite3.connect(DB_FILE); res = conn.execute("SELECT strftime(\"%H\", ts) as hr, count(*) FROM drops WHERE ts > datetime(\"now\", \"-24 hours\") GROUP BY hr").fetchall(); conn.close()
-    return {"hourly": [{"hour": r[0], "count": r[1]} for r in res]}
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        # Fetch drops from the last 24 hours using Python's exact local time cutoff
+        cutoff = (datetime.now() - timedelta(hours=24)).strftime("%Y-%m-%d %H:%M:%S")
+        res = conn.execute("SELECT ts FROM drops WHERE ts > ?", (cutoff,)).fetchall()
+        conn.close()
+        
+        counts = {}
+        for r in res:
+            try:
+                # Align timestamp to nearest 30-minute block
+                dt = datetime.strptime(r[0][:16], "%Y-%m-%d %H:%M")
+                aligned_dt = dt.replace(minute=(dt.minute // 30) * 30, second=0, microsecond=0)
+                k = aligned_dt.strftime("%H:%M")
+                counts[k] = counts.get(k, 0) + 1
+            except: pass
+
+        # Build a complete 24-hour timeline in 30min steps (48 points)
+        full_stats = []
+        now = datetime.now()
+        aligned_now = now.replace(minute=(now.minute // 30) * 30, second=0, microsecond=0)
+        
+        for i in range(47, -1, -1):
+            h_dt = aligned_now - timedelta(minutes=i*30)
+            h_str = h_dt.strftime("%H:%M")
+            full_stats.append({
+                "hour": h_str,
+                "count": counts.get(h_str, 0)
+            })
+            
+        return {"hourly": full_stats}
+    except Exception as e:
+        print(f"Stats Error: {e}")
+        return {"hourly": []}
 
 @app.post("/api/quick-ban")
 async def quick_ban(ip: str=Body(..., embed=True), u=Depends(get_current_user)):
