@@ -5,7 +5,7 @@ services:
     network_mode: host
     privileged: true
     volumes:
-      - ./backend:/app
+      - ./backend/data:/app/data
       - /etc/firewalld:/etc/firewalld
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
       - /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock
@@ -16,9 +16,6 @@ services:
     image: webyhomelab/firewalld-gui-frontend:1.1.0
     container_name: firewalld-gui-frontend
     network_mode: host
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     restart: always
 
   nginx:
