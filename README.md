@@ -10,64 +10,72 @@
 <br>
 
 # 🛡️ Firewalld-GUI (Weby Homelab)
+*Сучасне, швидке та естетичне керування мережевою безпекою Linux.*
 
-**Firewalld-GUI** — це потужна, сучасна та безпечна веб-панель для керування системним брандмауером `firewalld` та системою `Fail2Ban` на серверах Linux (AlmaLinux, RHEL, CentOS, Ubuntu).
+[![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![System](https://img.shields.io/badge/system-AlmaLinux_|_Ubuntu_|_RHEL-red.svg)]()
 
-Створена для системних адміністраторів, які хочуть мати повний контроль над безпекою сервера через зручний графічний інтерфейс, не втрачаючи при цьому системної надійності.
-
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.12-green.svg)
-![React](https://img.shields.io/badge/react-18-61dafb.svg)
-
----
-
-## ✨ Основні можливості
-
-- 🌍 **Керування Зонами та Портами**: Швидке відкриття/закриття портів та сервісів в 1 клік.
-- 🚦 **Port Forwarding (NAT)**: Просте налаштування прокидання портів (наприклад, з 80 на 8080).
-- 📜 **Rich Rules**: Повноцінна підтримка складних правил Firewalld.
-- 📦 **IP Sets**: Створення та керування списками IP (чорні та білі списки) для масового блокування.
-- 🛡️ **Fail2Ban Integration**: Відображення активних банів та можливість розблокувати IP (Unban) в 1 клік.
-- 📊 **Live Monitoring**: Моніторинг відхилених пакетів (Drops) у реальному часі та графік атак за останні 24 години.
-- 🚫 **Quick Ban**: Миттєве відправлення атакуючого IP у Blacklist прямо з таблиці логів.
-- 🔍 **Whois Lookup**: Вбудована перевірка країни та провайдера нападника.
-- 🕰️ **Time Machine (Snapshots)**: Автоматичне створення бекапів конфігурації перед кожною зміною та можливість відкату в 1 клік.
-- 👮 **Multi-User & Audit**: Рольова система (Superadmin / Admin) та детальний журнал дій (хто, коли і що змінив).
-- 📱 **Responsive Design**: Сучасний інтерфейс (Glassmorphism), повністю адаптований під мобільні пристрої.
-- 🚀 **Telegram Alerts**: Миттєві сповіщення про дії адмінів у ваш Telegram.
+**Firewalld-GUI** — це потужний веб-інтерфейс для керування `firewalld` та `Fail2Ban`, створений для системних адміністраторів, які цінують свій час та хочуть мати повну візуальну картину безпеки сервера. Він перетворює складні консольні команди на інтуїтивно зрозумілий дашборд із аналітикою в реальному часі.
 
 ---
 
-## 🚀 Встановлення (Docker)
+## 🧩 Архітектура системи
 
-Проєкт розгортається за допомогою Docker Compose. Всі сервіси (Бекенд, Фронтенд, Nginx) запаковані та готові до роботи.
+```mermaid
+graph TD
+    User((Адміністратор)) -->|HTTPS / JWT| UI[Web Dashboard]
+    
+    subgraph "Firewalld-GUI Backend"
+        UI -->|API Requests| FastAPI[FastAPI Service]
+        FastAPI -->|Exec| FWCMD[firewall-cmd Engine]
+        FastAPI -->|Exec| F2BCMD[fail2ban-client]
+        FastAPI -->|Log Parser| LOGS[System Logs]
+    end
 
-### Вимоги
-- ОС: AlmaLinux 10 / Ubuntu 24.04 / RHEL
-- Встановлені: `docker`, `docker-compose-plugin`, `firewalld`, `fail2ban`
+    subgraph "System Layer"
+        FWCMD -->|Manage Zones/Ports| FW[Firewalld Daemon]
+        F2BCMD -->|Active Bans| F2B[Fail2Ban Service]
+        FW -->|Apply| IPT[nftables / iptables]
+    end
 
-### Запуск
-1. Клонуйте репозиторій:
-```bash
-git clone https://github.com/weby-homelab/firewalld-gui.git
-cd firewalld-gui
+    FastAPI -->|Persistence| JSON[(users.json / config.json)]
+    FastAPI -->|Stats| DB[(stats.db SQL)]
 ```
-2. Запустіть контейнери:
+
+---
+
+## ✨ Ключові можливості
+
+- **🚀 Візуальний Rule Builder:** Створюйте складні правила, керуйте портами та сервісами в один клік без ризику синтаксичних помилок.
+- **🕵️‍♂️ Fail2Ban Integration:** Повний контроль над активними банами. Переглядайте статус джейлів, історію атак та розбанюйте IP безпосередньо з інтерфейсу.
+- **🕰️ Auto-Snapshots:** Система автоматично робить бекап поточної конфігурації перед кожною зміною. Ви завжди можете повернутися до стабільного стану.
+- **📈 Real-time Analytics:** Відстежуйте статистику відхилених пакетів (DROP/REJECT) та активність зловмисників через інтегровані графіки.
+- **🌍 IP Intelligence:** Вбудований Whois-сервіс дозволяє миттєво ідентифікувати провайдера та країну походження будь-якої заблокованої адреси.
+
+---
+
+## 🛠️ Швидкий старт
+
+### Використання Docker
 ```bash
-docker compose up -d --build
+docker pull webyhomelab/firewalld-gui:latest
+docker run -d --name firewalld-gui --privileged --network host webyhomelab/firewalld-gui:latest
 ```
-3. Відкрийте панель у браузері на порту `80` (або налаштуйте Cloudflare Tunnel).
+*Важливо: `--privileged` та `--network host` необхідні для прямої взаємодії з демоном firewalld на хості.*
 
-### Перший вхід (Smart Onboarding)
-При першому відкритті панелі система запропонує вам створити першого користувача (Superadmin). Після цього всі маршрути будуть надійно захищені JWT-токеном.
-
----
-
-## 🔒 Безпека
-- **Smart Whitelist**: Створіть IP Set з назвою `whitelist` і додайте туди свою IP-адресу. Це захистить вас від випадкового "самоблокування" як на рівні GUI, так і на рівні ядра `firewalld`.
-- **Protected Ports**: GUI автоматично блокує видалення критичних портів (22, 55222, 80, 443), щоб ви не втратили доступ до сервера.
+### Встановлення як сервіс
+Детальні інструкції для AlmaLinux та Ubuntu доступні в розділі **Installation Guide** в `README_ENG.md`.
 
 ---
 
-## 📄 Ліцензія
-© 2026 Weby Homelab. Всі права захищені. Розроблено з пристрастю до безпеки.
+## 📋 Системні вимоги
+- **ОС:** AlmaLinux 9+, RHEL 9+, Ubuntu 22.04/24.04.
+- **Залежності:** `firewalld`, `fail2ban`, `python3.12+`.
+- **Доступ:** Права `root` для виконання системних команд.
+
+---
+<p align="center">
+  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
+  <strong>✦ 2026 Weby Homelab ✦</strong>
+</p>
