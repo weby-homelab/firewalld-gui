@@ -1,8 +1,6 @@
 services:
   backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
+    image: webyhomelab/firewalld-gui-backend:1.1.0
     container_name: firewalld-gui-backend
     network_mode: host
     privileged: true
@@ -15,9 +13,7 @@ services:
     restart: always
 
   frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
+    image: webyhomelab/firewalld-gui-frontend:1.1.0
     container_name: firewalld-gui-frontend
     network_mode: host
     volumes:
