@@ -102,19 +102,50 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
     s = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-services"])
     r = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-rich-rules"])
     f = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-forward-ports"])
-    return {"ports": p.split(), "services": s.split(), "rich_rules": r.split("\n") if r else [], "forward_ports": f.split("\n") if f else []}
+    # New features: Masquerade and ICMP blocks
+    masq = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--query-masquerade"]).strip()
+    icmp = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-icmp-blocks"])
+    
+    return {
+        "ports": p.split(), 
+        "services": s.split(), 
+        "rich_rules": r.split("\n") if r else [], 
+        "forward_ports": f.split("\n") if f else [],
+        "masquerade": masq == "yes",
+        "icmp_blocks": icmp.split()
+    }
+
+@app.get("/api/icmptypes/all")
+async def get_all_icmptypes(u=Depends(get_current_user)):
+    """Return all available ICMP types supported by firewalld"""
+    return {"icmptypes": run_cmd(["firewall-cmd", "--get-icmptypes"]).split()}
 
 @app.post("/api/zone/{name}/{type}")
-async def add_item(name: str, type: str, data: dict = Body(...), u=Depends(get_current_user)):
-    val = data.get("port") or data.get("service") or data.get("rule") or data.get("forward")
+async def add_item(name: str, type: str, data: dict = Body(None), u=Depends(get_current_user)):
+    # Data can be None for masquerade
+    val = data.get("value") if data else None
+    if not val and data:
+        val = data.get("port") or data.get("service") or data.get("rule") or data.get("forward")
+        
     shutil.copytree("/etc/firewalld", SNAPSHOTS_DIR+"/auto_"+datetime.now().strftime("%H%M%S"), dirs_exist_ok=True)
-    res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--add-{type}={val}"])
-    log_action(u["username"], f"ADD_{type.upper()}", f"Zone: {name}, Val: {val}")
+    
+    if type == "masquerade":
+        res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--add-masquerade"])
+        val_log = "enabled"
+    else:
+        res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--add-{type}={val}"])
+        val_log = val
+        
+    log_action(u["username"], f"ADD_{type.upper()}", f"Zone: {name}, Val: {val_log}")
     return {"result": res}
 
 @app.delete("/api/zone/{name}/{type}/{val:path}")
 async def remove_item(name: str, type: str, val: str, u=Depends(get_current_user)):
-    res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--remove-{type}={val}"])
+    if type == "masquerade":
+        res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--remove-masquerade"])
+    else:
+        res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--remove-{type}={val}"])
+        
     log_action(u["username"], f"REMOVE_{type.upper()}", f"Zone: {name}, Val: {val}")
     return {"result": res}
 

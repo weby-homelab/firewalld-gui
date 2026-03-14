@@ -24,10 +24,11 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "" })
+  const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
   const [showSafeMigrate, setShowSafeMigrate] = useState(false)
   const [migrateStep, setMigrateStep] = useState(1) // 1: Add new, 2: Can delete old
+  const [availableIcmpTypes, setAvailableIcmpTypes] = useState<string[]>([])
 
   const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
   const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp"]
@@ -62,6 +63,9 @@ function App() {
         setStatus(await f("/api/status"))
         setZones((await f("/api/zones/all")).zones || [])
         setIpsets((await f("/api/ipsets/all")).ipsets || [])
+        if (availableIcmpTypes.length === 0) {
+            setAvailableIcmpTypes((await f("/api/icmptypes/all")).icmptypes || [])
+        }
       }
       if (view === "monitoring") {
         setFwLogs((await f("/api/logs")).logs || [])
@@ -170,7 +174,41 @@ function App() {
                 <div className="zone-list">{ipsets.map(s => (<button key={s} className={selectedIpset===s?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedIpset(s);setSelectedZone("")}}>{s}</button>))}</div></section>
             </div>
             <div className="main-pane">
-              {selectedZone && <section className="glass-card details-view"><h2>Zone: {selectedZone}</h2><div className="details-grid">
+              {selectedZone && <section className="glass-card details-view">
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px'}}>
+                    <h2 style={{margin: 0, border: 'none', padding: 0}}>Zone: {selectedZone}</h2>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                        <span style={{fontSize: '0.85em', color: 'var(--text-muted)'}}>Masquerade (NAT)</span>
+                        <button 
+                            onClick={() => apiAction(`/api/zone/${selectedZone}/masquerade`, zoneDetails?.masquerade ? "DELETE" : "POST", { value: "yes" })}
+                            style={{
+                                background: zoneDetails?.masquerade ? 'var(--success)' : 'rgba(255,255,255,0.1)',
+                                border: 'none', borderRadius: '20px', width: '40px', height: '22px', position: 'relative', cursor: 'pointer', transition: '0.3s'
+                            }}
+                        >
+                            <div style={{
+                                width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', 
+                                left: zoneDetails?.masquerade ? '20px' : '2px', transition: '0.3s'
+                            }}></div>
+                        </button>
+                    </div>
+                </div>
+                <div className="details-grid">
+                <div className="detail-group">
+                  <h4>ICMP Blocks</h4>
+                  <div className="tag-container">
+                    {zoneDetails?.icmp_blocks?.map((icmp: string) => (
+                      <span key={icmp} className="tag banned">{icmp} <i onClick={() => apiAction("/api/zone/" + selectedZone + "/icmp-block/" + encodeURIComponent(icmp), "DELETE")}>×</i></span>
+                    ))}
+                    <div className="add-form" style={{maxWidth: '300px'}}>
+                      <select value={inputs.icmp} onChange={e => setInputs({ ...inputs, icmp: e.target.value })}>
+                        <option value="">Select ICMP Type...</option>
+                        {availableIcmpTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <button onClick={() => { if(inputs.icmp) { apiAction("/api/zone/" + selectedZone + "/icmp-block", "POST", { value: inputs.icmp }); setInputs({ ...inputs, icmp: "" }); } }}>+</button>
+                    </div>
+                  </div>
+                </div>
                 <div className="detail-group">
                   <div className="group-header">
                     <h4>Ports</h4>
