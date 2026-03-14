@@ -59,8 +59,9 @@ graph TD
 
 ### Using Docker
 ```bash
-docker pull webyhomelab/firewalld-gui:latest
-docker run -d --name firewalld-gui --privileged --network host webyhomelab/firewalld-gui:latest
+git clone https://github.com/weby-homelab/firewalld-gui.git
+cd firewalld-gui
+docker compose up -d
 ```
 *Note: `--privileged` and `--network host` are required for direct interaction with the firewalld daemon on the host.*
 
