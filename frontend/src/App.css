@@ -638,3 +638,39 @@ input:focus, select:focus {
     padding: 10px;
   }
 }
+
+/* ----------------------------------
+   Auth Screen
+----------------------------------- */
+.auth-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+  padding: 40px 30px;
+}
+
+.auth-card h2 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 10px;
+}
+
+.auth-card .note {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-top: -15px;
+  margin-bottom: 10px;
+}
+
