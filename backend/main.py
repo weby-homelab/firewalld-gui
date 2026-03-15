@@ -259,6 +259,10 @@ async def add_item(name: str, type: str, data: dict = Body(None), u=Depends(get_
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--add-masquerade"])
         run_cmd(["firewall-cmd", "--reload"])
         val_log = "enabled"
+    elif type == "icmp-block":
+        res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--add-icmp-block={val}"])
+        run_cmd(["firewall-cmd", "--reload"])
+        val_log = val
     else:
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--add-{type}={val}"])
         val_log = val
@@ -271,6 +275,9 @@ async def add_item(name: str, type: str, data: dict = Body(None), u=Depends(get_
 async def remove_item(name: str, type: str, val: str = None, u=Depends(get_current_user)):
     if type == "masquerade":
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--remove-masquerade"])
+        run_cmd(["firewall-cmd", "--reload"])
+    elif type == "icmp-block":
+        res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--remove-icmp-block={val}"])
         run_cmd(["firewall-cmd", "--reload"])
     else:
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--remove-{type}={val}"])
