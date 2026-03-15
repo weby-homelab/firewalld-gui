@@ -52,18 +52,43 @@ graph TD
 - **Snapshot Restoration**: Instant rollback to previous stable configurations.
 - **Dual-Channel Execution**: Backend merges stdout/stderr for 100% reliable command execution on new Linux kernels.
 
-## 📦 Docker Installation
+## 📦 Installation (Full Stack Docker)
+
+To run the complete project, create a `docker-compose.yml` file:
 
 ```yaml
 services:
-  firewalld-gui:
+  firewalld-backend:
     image: webyhomelab/firewalld-gui-backend:latest
+    container_name: firewalld-gui-backend
+    network_mode: host
     privileged: true
+    volumes:
+      - ./data:/app/data
+      - /etc/firewalld:/etc/firewalld
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+      - /var/log:/var/log:ro
+    restart: always
+
+  firewalld-frontend:
+    image: webyhomelab/firewalld-gui-frontend:latest
+    container_name: firewalld-gui-frontend
+    network_mode: host
+    restart: always
+
+  firewalld-nginx:
+    image: nginx:alpine
+    container_name: firewalld-gui-nginx
     network_mode: host
     volumes:
-      - /etc/firewalld:/etc/firewalld
-      - /var/log:/var/log:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - firewalld-backend
+      - firewalld-frontend
+    restart: always
 ```
+
+> **Note:** You will also need the `nginx.conf` file for the Nginx container to function correctly. You can find it in the `docker/` folder of this repository.
 
 ---
 © 2026 **Weby Homelab**

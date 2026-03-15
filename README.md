@@ -52,18 +52,43 @@ graph TD
 - **Система відкатів**: Можливість миттєво відновити попередню стабільну конфігурацію.
 - **Dual-Channel Execution**: Бекенд об'єднує stdout/stderr для 100% надійності виконання команд на нових ядрах Linux.
 
-## 📦 Встановлення через Docker
+## 📦 Встановлення (Full Stack Docker)
+
+Для повноцінної роботи проекту створіть файл `docker-compose.yml`:
 
 ```yaml
 services:
-  firewalld-gui:
+  firewalld-backend:
     image: webyhomelab/firewalld-gui-backend:latest
+    container_name: firewalld-gui-backend
+    network_mode: host
     privileged: true
+    volumes:
+      - ./data:/app/data
+      - /etc/firewalld:/etc/firewalld
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+      - /var/log:/var/log:ro
+    restart: always
+
+  firewalld-frontend:
+    image: webyhomelab/firewalld-gui-frontend:latest
+    container_name: firewalld-gui-frontend
+    network_mode: host
+    restart: always
+
+  firewalld-nginx:
+    image: nginx:alpine
+    container_name: firewalld-gui-nginx
     network_mode: host
     volumes:
-      - /etc/firewalld:/etc/firewalld
-      - /var/log:/var/log:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - firewalld-backend
+      - firewalld-frontend
+    restart: always
 ```
+
+> **Важливо:** Для роботи Nginx вам також знадобиться файл конфігурації `nginx.conf`. Ви можете знайти його в папці `docker/` цього репозиторію.
 
 ---
 © 2026 **Weby Homelab**
