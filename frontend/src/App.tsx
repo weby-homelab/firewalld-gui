@@ -257,7 +257,7 @@ function App() {
                     <select 
                       value={globalConfig?.default_zone || ''} 
                       onChange={e => apiAction("/api/config/global", "POST", {default_zone: e.target.value})}
-                      className="btn-mini" style={{width: '100%', marginTop: '4px'}}
+                      className="btn-mini"
                     >
                       {zones.map(z => <option key={z} value={z}>{z}</option>)}
                     </select>
@@ -267,7 +267,7 @@ function App() {
                     <select 
                       value={globalConfig?.log_denied || 'off'} 
                       onChange={e => apiAction("/api/config/global", "POST", {log_denied: e.target.value})}
-                      className="btn-mini" style={{width: '100%', marginTop: '4px'}}
+                      className="btn-mini"
                     >
                       <option value="off">off</option>
                       <option value="all">all</option>
@@ -304,7 +304,6 @@ function App() {
                             value={zoneDetails?.target || 'default'} 
                             onChange={(e) => apiAction(`/api/zone/${selectedZone}/target`, "POST", { target: e.target.value })}
                             className="btn-mini"
-                            style={{padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--card-border)'}}
                         >
                             <option value="default">default</option>
                             <option value="ACCEPT">ACCEPT</option>
@@ -446,7 +445,6 @@ function App() {
                                 value={policyDetails?.target || 'default'} 
                                 onChange={(e) => apiAction(`/api/policy/${selectedPolicy}/target`, "POST", { target: e.target.value })}
                                 className="btn-mini"
-                                style={{padding: '4px 10px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--card-border)'}}
                             >
                                 <option value="default">default</option>
                                 <option value="ACCEPT">ACCEPT</option>
