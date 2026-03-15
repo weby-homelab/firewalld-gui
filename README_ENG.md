@@ -6,6 +6,30 @@ A modern, fast, and powerful web interface for `firewalld`, specifically designe
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)
 
+## 🏗 System Architecture
+
+```mermaid
+graph TD
+    User((Administrator)) -- HTTPS --> WebUI[Frontend: React + Vite]
+    
+    subgraph "Docker Container"
+        WebUI -- API Calls --> FastApi[Backend: FastAPI]
+        FastApi -- Execution --> Cmd[Shell: firewall-cmd]
+        FastApi -- Logging --> Logs[(SQLite Stats / Audit)]
+        FastApi -- Alerts --> TG[Telegram Bot]
+    end
+    
+    subgraph "Host OS (AlmaLinux/Ubuntu)"
+        Cmd -- Permanent Config --> FW[Firewalld Service]
+        FW -- Network Rules --> Nft[Nftables / Iptables]
+        SysLogs[/var/log/syslog/] -- Streaming --> FastApi
+    end
+    
+    style User fill:#f9f,stroke:#333,stroke-width:2px
+    style Docker fill:#f5f5f5,stroke:#6366f1,stroke-width:2px,stroke-dasharray: 5 5
+    style FW fill:#ff9900,stroke:#333,stroke-width:2px
+```
+
 ## 🚀 Key Features
 
 ### 🛠 Service Management (Service Architect)
