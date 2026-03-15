@@ -40,7 +40,10 @@ function App() {
   const [policies, setPolicies] = useState<string[]>([])
   const [selectedPolicy, setSelectedPolicy] = useState<string | null>(null)
   const [policyDetails, setPolicyDetails] = useState<any>(null)
-  const [services, setServices] = useState<string[]>([])
+  const [services, setServices] = useState<any[]>([])
+  const [selectedService, setSelectedService] = useState<string | null>(null)
+  const [serviceDetails, setServiceDetails] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState("")
   const [globalConfig, setGlobalConfig] = useState<any>(null)
 
   const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
@@ -107,6 +110,7 @@ function App() {
         await fetchData();
         if (selectedZone && view === "config") fetchZoneDetails(selectedZone);
         if (selectedIpset && view === "config") fetchIpsetDetails(selectedIpset);
+        if (selectedService && view === "services") fetchServiceDetails(selectedService);
     } else alert("Action failed")
     setLoading(false)
   }
@@ -130,9 +134,16 @@ function App() {
     if (res.ok) setPolicyDetails(await res.json())
   }
 
+  const fetchServiceDetails = async (s: string) => {
+    const res = await fetch("/api/service/"+s+"/details", {headers:authHeaders})
+    if (res.ok) setServiceDetails(await res.json())
+  }
+
   useEffect(() => { if (token && user && selectedZone && view === "config") fetchZoneDetails(selectedZone) }, [token, user, selectedZone, view])
   useEffect(() => { if (token && user && selectedIpset && view === "config") fetchIpsetDetails(selectedIpset) }, [token, user, selectedIpset, view])
   useEffect(() => { if (token && user && selectedPolicy && view === "config") fetchPolicyDetails(selectedPolicy) }, [token, user, selectedPolicy, view])
+  useEffect(() => { if (token && user && selectedService && view === "services") fetchServiceDetails(selectedService) }, [token, user, selectedService, view])
+  useEffect(() => { if (token && user && view === "services") fetchData() }, [token, user, view])
 
   useEffect(() => {
     if (token && user && view === "monitoring") {
@@ -470,30 +481,89 @@ function App() {
 
         {view === "services" && (
           <div className="wide-pane">
-            <section className="glass-card">
-              <h2>Custom Services Management</h2>
-              <p className="note" style={{marginBottom: '20px'}}>Create and manage custom service definitions. System services are protected.</p>
-              
-              <div className="add-form" style={{maxWidth: '500px', marginBottom: '30px'}}>
-                <input value={inputs.new_service} onChange={e=>setInputs({...inputs,new_service:e.target.value})} placeholder="Service Name (e.g. my-app)" />
-                <button className="btn-add-full" onClick={()=>{apiAction("/api/service/create","POST",{name:inputs.new_service});setInputs({...inputs,new_service:""})}}>Create Service</button>
+            <div style={{display: 'grid', gridTemplateColumns: selectedService ? '1fr 350px' : '1fr', gap: '24px', transition: '0.3s'}}>
+              <div className="services-main">
+                <section className="glass-card">
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                    <h2>Service Definitions</h2>
+                    <div className="add-form" style={{maxWidth: '300px'}}>
+                      <input 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                        placeholder="Search services..." 
+                        style={{background: 'rgba(255,255,255,0.05)', border: '1px solid var(--card-border)'}}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="add-form" style={{maxWidth: '500px', marginBottom: '30px', borderBottom: '1px solid var(--card-border)', paddingBottom: '20px'}}>
+                    <input value={inputs.new_service} onChange={e=>setInputs({...inputs,new_service:e.target.value})} placeholder="New Service Name (e.g. my-app)" />
+                    <button className="btn-add-full" onClick={()=>{apiAction("/api/service/create","POST",{name:inputs.new_service});setInputs({...inputs,new_service:""})}}>Create Service</button>
+                  </div>
+
+                  <div className="detail-group">
+                    <h4>Custom Services ({services.filter(s => s.is_custom).length})</h4>
+                    <div className="tag-container" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginTop: '10px'}}>
+                      {services.filter(s => s.is_custom && s.name.includes(searchTerm)).map(s => (
+                        <div 
+                          key={s.name} 
+                          className={`list-item-wrap glass-card ${selectedService === s.name ? 'active-item' : ''}`}
+                          style={{padding: '10px 14px', cursor: 'pointer', border: selectedService === s.name ? '1px solid var(--success)' : '1px solid var(--card-border)'}}
+                          onClick={() => setSelectedService(s.name)}
+                        >
+                          <div style={{display: 'flex', alignItems: 'center', gap: '8px', flex: 1}}>
+                            <i className="fas fa-tools" style={{color: 'var(--success)', fontSize: '0.8rem'}}></i>
+                            <span style={{fontSize: '0.9rem'}}>{s.name}</span>
+                          </div>
+                          <i className="fas fa-trash del-icon" onClick={(e)=>{e.stopPropagation(); apiAction("/api/service/"+s.name, "DELETE"); if(selectedService===s.name)setSelectedService(null)}}></i>
+                        </div>
+                      ))}
+                      {services.filter(s => s.is_custom).length === 0 && <p className="empty">No custom services created yet</p>}
+                    </div>
+                  </div>
+
+                  <div className="detail-group" style={{marginTop: '40px'}}>
+                    <h4>System Services ({services.filter(s => !s.is_custom).length})</h4>
+                    <div className="tag-container" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', marginTop: '10px', opacity: 0.8}}>
+                      {services.filter(s => !s.is_custom && s.name.includes(searchTerm)).map(s => (
+                        <div key={s.name} className="glass-card" style={{padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'}}>
+                          <i className="fas fa-lock" style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}></i>
+                          <span style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>{s.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </section>
               </div>
 
-              <div className="tag-container" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px'}}>
-                {services.map(s => (
-                  <div key={s} className="glass-card service-item" style={{padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                      <i className="fas fa-concierge-bell" style={{color: 'var(--info)', opacity: 0.7}}></i>
-                      <span style={{fontWeight: 500}}>{s}</span>
+              {selectedService && (
+                <div className="services-sidebar">
+                  <section className="glass-card details-view" style={{position: 'sticky', top: '20px'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                      <h3 style={{margin: 0}}>Service: {selectedService}</h3>
+                      <i className="fas fa-times clickable" onClick={() => setSelectedService(null)}></i>
                     </div>
-                    {/* Simplified protection: if service doesn't contain common system prefixes, allow delete */}
-                    {!["ssh", "http", "https", "dns", "dhcp", "ftp", "mysql", "postgresql", "redis"].includes(s) && (
-                      <i className="fas fa-trash del-icon" onClick={()=>apiAction("/api/service/"+s, "DELETE")}></i>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
+                    
+                    <div className="detail-group">
+                      <h4>Ports / Protocols</h4>
+                      <div className="tag-container" style={{marginTop: '10px'}}>
+                        {serviceDetails?.ports?.map((p: string) => (
+                          <span key={p} className="tag port">
+                            {p} <i onClick={() => apiAction(`/api/service/${selectedService}/port/${encodeURIComponent(p)}`, "DELETE")}>×</i>
+                          </span>
+                        ))}
+                        {serviceDetails?.ports?.length === 0 && <p className="empty" style={{padding: '10px'}}>No ports defined</p>}
+                      </div>
+                      
+                      <div className="add-form" style={{marginTop: '20px'}}>
+                        <input value={inputs.port} onChange={e=>setInputs({...inputs,port:e.target.value})} placeholder="e.g. 8080/tcp" />
+                        <button onClick={() => { if(inputs.port) { apiAction(`/api/service/${selectedService}/port`, "POST", { port: inputs.port }); setInputs({ ...inputs, port: "" }); } }}>+</button>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
