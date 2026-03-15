@@ -377,6 +377,12 @@ input:focus, select:focus {
   transform: scale(1.1);
 }
 
+.active-item {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: var(--success) !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
 .zone-btn.ipset-active {
   border-color: var(--info);
   color: var(--info);

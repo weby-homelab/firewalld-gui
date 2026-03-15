@@ -142,7 +142,36 @@ async def delete_policy(name: str, u=Depends(get_current_user)):
 # --- Services Lifecycle ---
 @app.get("/api/services/all")
 async def get_services(u=Depends(get_current_user)):
-    return {"services": run_cmd(["firewall-cmd", "--get-services"]).split()}
+    all_services = run_cmd(["firewall-cmd", "--get-services"]).split()
+    custom_dir = "/etc/firewalld/services"
+    custom_services = []
+    if os.path.exists(custom_dir):
+        custom_services = [f.replace(".xml", "") for f in os.listdir(custom_dir) if f.endswith(".xml")]
+    
+    result = []
+    for s in all_services:
+        result.append({
+            "name": s,
+            "is_custom": s in custom_services
+        })
+    return {"services": result}
+
+@app.get("/api/service/{name}/details")
+async def get_service_info(name: str, u=Depends(get_current_user)):
+    ports = run_cmd(["firewall-cmd", "--permanent", "--service=" + name, "--get-ports"])
+    return {"name": name, "ports": ports.split()}
+
+@app.post("/api/service/{name}/port")
+async def add_service_port(name: str, port: str = Body(..., embed=True), u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--service=" + name, "--add-port=" + port])
+    log_action(u["username"], "SERVICE_ADD_PORT", f"Service: {name}, Port: {port}")
+    return {"result": res}
+
+@app.delete("/api/service/{name}/port/{port}")
+async def remove_service_port(name: str, port: str, u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--service=" + name, "--remove-port=" + port])
+    log_action(u["username"], "SERVICE_REMOVE_PORT", f"Service: {name}, Port: {port}")
+    return {"result": res}
 
 @app.post("/api/service/create")
 async def create_service(name: str = Body(..., embed=True), u=Depends(get_current_user)):
