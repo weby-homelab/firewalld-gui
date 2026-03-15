@@ -214,7 +214,10 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
     
     # New features: Masquerade and ICMP blocks
     masq = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--query-masquerade"]).strip()
-    icmp = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-icmp-blocks"])
+    icmp_raw = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-icmp-blocks"])
+    # Handle both space and comma separation, and clean empty strings
+    icmp_list = [x.strip() for x in re.split(r'[\s,]+', icmp_raw) if x.strip()]
+    
     target = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--get-target"])
     
     return {
@@ -225,7 +228,7 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
         "interfaces": i.split(),
         "sources": src.split(),
         "masquerade": masq == "yes",
-        "icmp_blocks": icmp.split(),
+        "icmp_blocks": icmp_list,
         "target": target.strip() if target else "default"
     }
 
