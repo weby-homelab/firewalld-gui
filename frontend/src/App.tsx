@@ -24,6 +24,14 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
+  const [version, setVersion] = useState("v1.1.0")
+
+  useEffect(() => {
+    fetch("https://api.github.com/repos/weby-homelab/firewalld-gui/releases/latest")
+      .then(res => res.json())
+      .then(data => { if(data.tag_name) setVersion(data.tag_name); })
+      .catch(e => console.error("Could not fetch version", e));
+  }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
   const [showSafeMigrate, setShowSafeMigrate] = useState(false)
@@ -158,7 +166,7 @@ function App() {
   return (
     <div className="container-fluid">
       <header className="glass-card header">
-        <div className="brand"><h1>Firewalld-GUI</h1><span className="badge">v1.0.0</span></div>
+        <div className="brand"><h1>Firewalld-GUI</h1><span className="badge">{version}</span></div>
         <nav className="view-nav">
           {["config", "monitoring", "snapshots", "admin", "settings"].map(v => (
             (v !== "settings" && v !== "admin" || user?.role === "superadmin") && 
