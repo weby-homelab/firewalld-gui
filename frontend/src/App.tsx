@@ -346,20 +346,21 @@ function App() {
                 <div className="detail-group">
                   <h4>ICMP Blocks</h4>
                   <div className="tag-container" style={{minHeight: '20px', marginBottom: '15px'}}>
-                    {zoneDetails?.icmp_blocks?.map((icmp: string) => (
-                      <span key={icmp} className="tag banned" style={{padding: '8px 12px', fontSize: '0.9rem'}}>
-                        <i className="fas fa-shield-alt mr-1" style={{fontSize: '0.7rem', opacity: 0.7}}></i>
-                        {icmp} 
-                        <button 
-                          onClick={() => apiAction("/api/zone/" + selectedZone + "/icmp-block/" + encodeURIComponent(icmp), "DELETE")}
-                          style={{background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', marginLeft: '8px', padding: '2px', display: 'inline-flex', alignItems: 'center'}}
-                          title="Remove block"
-                        >
-                          <i className="fas fa-times-circle" style={{fontSize: '1rem'}}></i>
-                        </button>
-                      </span>
-                    ))}
-                    {(!zoneDetails?.icmp_blocks || zoneDetails.icmp_blocks.length === 0) && (
+                    {zoneDetails && zoneDetails.icmp_blocks && zoneDetails.icmp_blocks.length > 0 ? (
+                      zoneDetails.icmp_blocks.map((icmp: string) => (
+                        <span key={icmp} className="tag banned" style={{padding: '8px 12px', fontSize: '0.9rem'}}>
+                          <i className="fas fa-shield-alt mr-1" style={{fontSize: '0.7rem', opacity: 0.7}}></i>
+                          {icmp} 
+                          <button 
+                            onClick={() => apiAction("/api/zone/" + selectedZone + "/icmp-block/" + encodeURIComponent(icmp), "DELETE")}
+                            style={{background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', marginLeft: '8px', padding: '2px', display: 'inline-flex', alignItems: 'center'}}
+                            title="Remove block"
+                          >
+                            <i className="fas fa-times-circle" style={{fontSize: '1rem'}}></i>
+                          </button>
+                        </span>
+                      ))
+                    ) : (
                       <p className="note" style={{opacity: 0.5, fontStyle: 'italic'}}>No active ICMP blocks in this zone</p>
                     )}
                   </div>
