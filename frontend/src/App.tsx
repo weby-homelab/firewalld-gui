@@ -345,17 +345,42 @@ function App() {
 
                 <div className="detail-group">
                   <h4>ICMP Blocks</h4>
-                  <div className="tag-container">
+                  <div className="tag-container" style={{minHeight: '20px', marginBottom: '15px'}}>
                     {zoneDetails?.icmp_blocks?.map((icmp: string) => (
-                      <span key={icmp} className="tag banned">{icmp} <i onClick={() => apiAction("/api/zone/" + selectedZone + "/icmp-block/" + encodeURIComponent(icmp), "DELETE")}>×</i></span>
+                      <span key={icmp} className="tag banned" style={{padding: '8px 12px', fontSize: '0.9rem'}}>
+                        <i className="fas fa-shield-alt mr-1" style={{fontSize: '0.7rem', opacity: 0.7}}></i>
+                        {icmp} 
+                        <button 
+                          onClick={() => apiAction("/api/zone/" + selectedZone + "/icmp-block/" + encodeURIComponent(icmp), "DELETE")}
+                          style={{background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', marginLeft: '8px', padding: '2px', display: 'inline-flex', alignItems: 'center'}}
+                          title="Remove block"
+                        >
+                          <i className="fas fa-times-circle" style={{fontSize: '1rem'}}></i>
+                        </button>
+                      </span>
                     ))}
-                    <div className="add-form" style={{maxWidth: '300px'}}>
-                      <select value={inputs.icmp} onChange={e => setInputs({ ...inputs, icmp: e.target.value })}>
-                        <option value="">Select ICMP Type...</option>
-                        {availableIcmpTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <button onClick={() => { if(inputs.icmp) { apiAction("/api/zone/" + selectedZone + "/icmp-block", "POST", { value: inputs.icmp }); setInputs({ ...inputs, icmp: "" }); } }}>+</button>
-                    </div>
+                    {(!zoneDetails?.icmp_blocks || zoneDetails.icmp_blocks.length === 0) && (
+                      <p className="note" style={{opacity: 0.5, fontStyle: 'italic'}}>No active ICMP blocks in this zone</p>
+                    )}
+                  </div>
+                  
+                  <div className="add-form" style={{maxWidth: '400px', background: 'rgba(255,255,255,0.02)', padding: '10px', borderRadius: '8px', border: '1px dashed var(--card-border)'}}>
+                    <select 
+                      value={inputs.icmp} 
+                      onChange={e => setInputs({ ...inputs, icmp: e.target.value })}
+                      className="btn-mini"
+                      style={{flex: 1}}
+                    >
+                      <option value="">Block ICMP type...</option>
+                      {availableIcmpTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <button 
+                      className="btn-reload"
+                      onClick={() => { if(inputs.icmp) { apiAction("/api/zone/" + selectedZone + "/icmp-block", "POST", { value: inputs.icmp }); setInputs({ ...inputs, icmp: "" }); } }}
+                      style={{padding: '5px 15px'}}
+                    >
+                      <i className="fas fa-ban mr-1"></i> Block
+                    </button>
                   </div>
                 </div>
                 <div className="detail-group">
