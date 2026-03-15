@@ -112,7 +112,10 @@ function App() {
         if (selectedZone && view === "config") fetchZoneDetails(selectedZone);
         if (selectedIpset && view === "config") fetchIpsetDetails(selectedIpset);
         if (selectedService && view === "services") fetchServiceDetails(selectedService);
-    } else alert("Action failed")
+    } else {
+        const errorData = await res.json().catch(() => ({ detail: "Unknown error" }));
+        alert(`Action failed: ${errorData.detail || "Server error"}`);
+    }
     setLoading(false)
   }
 
