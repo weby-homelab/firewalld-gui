@@ -93,8 +93,66 @@ async def get_me(u=Depends(get_current_user)): return u
 @app.get("/api/status")
 async def get_status(u=Depends(get_current_user)): return {"firewalld_state": run_cmd(["firewall-cmd", "--state"])}
 
+# --- Global Config ---
+@app.get("/api/config/global")
+async def get_global_cfg(u=Depends(get_current_user)):
+    dz = run_cmd(["firewall-cmd", "--get-default-zone"])
+    ld = run_cmd(["firewall-cmd", "--get-log-denied"])
+    return {"default_zone": dz, "log_denied": ld}
+
+@app.post("/api/config/global")
+async def set_global_cfg(data: dict = Body(...), u=Depends(get_current_user)):
+    if "default_zone" in data:
+        run_cmd(["firewall-cmd", "--set-default-zone=" + data["default_zone"]])
+    if "log_denied" in data:
+        run_cmd(["firewall-cmd", "--set-log-denied=" + data["log_denied"]])
+    log_action(u["username"], "UPDATE_GLOBAL_CONFIG", data)
+    return {"status": "success"}
+
+# --- Zones Lifecycle ---
 @app.get("/api/zones/all")
 async def get_all_zones(u=Depends(get_current_user)): return {"zones": run_cmd(["firewall-cmd", "--get-zones"]).split()}
+
+@app.post("/api/zone/create")
+async def create_zone(name: str = Body(..., embed=True), u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--new-zone=" + name])
+    log_action(u["username"], "CREATE_ZONE", name); return {"result": res}
+
+@app.delete("/api/zone/{name}")
+async def delete_zone(name: str, u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--delete-zone=" + name])
+    log_action(u["username"], "DELETE_ZONE", name); return {"result": res}
+
+# --- Policies Lifecycle ---
+@app.get("/api/policies/all")
+async def get_all_policies(u=Depends(get_current_user)):
+    policies_raw = run_cmd(["firewall-cmd", "--permanent", "--get-policies"])
+    return {"policies": policies_raw.split() if policies_raw else []}
+
+@app.post("/api/policy/create")
+async def create_policy(name: str = Body(..., embed=True), u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--new-policy=" + name])
+    log_action(u["username"], "CREATE_POLICY", name); return {"result": res}
+
+@app.delete("/api/policy/{name}")
+async def delete_policy(name: str, u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--delete-policy=" + name])
+    log_action(u["username"], "DELETE_POLICY", name); return {"result": res}
+
+# --- Services Lifecycle ---
+@app.get("/api/services/all")
+async def get_services(u=Depends(get_current_user)):
+    return {"services": run_cmd(["firewall-cmd", "--get-services"]).split()}
+
+@app.post("/api/service/create")
+async def create_service(name: str = Body(..., embed=True), u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--new-service=" + name])
+    log_action(u["username"], "CREATE_SERVICE", name); return {"result": res}
+
+@app.delete("/api/service/{name}")
+async def delete_service(name: str, u=Depends(get_current_user)):
+    res = run_cmd(["firewall-cmd", "--permanent", "--delete-service=" + name])
+    log_action(u["username"], "DELETE_SERVICE", name); return {"result": res}
 
 @app.get("/api/zone/{name}/details")
 async def get_zone_details(name: str, u=Depends(get_current_user)):
@@ -191,10 +249,11 @@ async def create_ipset(name: str=Body(..., embed=True), u=Depends(get_current_us
     res = run_cmd(["firewall-cmd", "--permanent", "--new-ipset=" + name, "--type=hash:ip"])
     log_action(u["username"], "IPSET_CREATE", f"Set: {name}"); return {"result": res}
 
+GEO_CACHE = {}
+
 @app.get("/api/logs")
 async def get_fw_logs(u=Depends(get_current_user)):
     try:
-        # Optimized log reading for Ubuntu/RHEL
         log_files = ["/var/log/syslog", "/var/log/messages", "/var/log/kern.log"]
         target_log = None
         for lf in log_files:
@@ -204,26 +263,42 @@ async def get_fw_logs(u=Depends(get_current_user)):
 
         if not target_log: return {"logs": []}
 
-        # Use tail to get last 500 lines efficiently
         cmd = ["tail", "-n", "500", target_log]
         lines = subprocess.check_output(cmd, text=True).splitlines()
 
         parsed = []; conn = sqlite3.connect(DB_FILE)
-        # Patterns for Firewalld dropped packets
-        # Example: "filter_IN_public_REJECT: " or "FINAL_REJECT: "
+        recent_ips = {}
+        
         for line in lines:
             if any(k in line for k in ["REJECT", "DROP", "DENIED"]):
                 src = re.search(r"SRC=([\d\.:a-fA-F]+)", line)
                 p = re.search(r"PROTO=(\w+)", line)
                 d = re.search(r"DPT=(\d+)", line)
                 if src:
+                    ip = src.group(1)
+                    
+                    # Basic Geo-IP Cache to avoid rate limiting
+                    if ip not in GEO_CACHE:
+                        try:
+                            # Use ip-api.com (free, 45 requests/minute)
+                            geo_res = requests.get(f"http://ip-api.com/json/{ip}", timeout=0.5).json()
+                            GEO_CACHE[ip] = geo_res.get("countryCode", "??")
+                        except: GEO_CACHE[ip] = "??"
+
                     item = {
                         "time": line[:16].strip(), 
-                        "src": src.group(1), 
+                        "src": ip, 
+                        "country": GEO_CACHE[ip],
                         "proto": p.group(1) if p else "?", 
                         "port": d.group(1) if d else "?"
                     }
                     parsed.append(item)
+                    
+                    # Anomaly Detection: Count drops per IP in this batch
+                    recent_ips[ip] = recent_ips.get(ip, 0) + 1
+                    if recent_ips[ip] == 50: # Trigger alert on 50th drop in last 500 lines
+                         send_tg_alert(f"⚠️ *Anomaly Detected!*\n🎯 IP: {ip}\n🔥 Activity: 50+ dropped packets detected in recent logs.")
+
                     # Use a truncated timestamp for the stats DB to avoid duplicates in the same second
                     conn.execute("INSERT OR IGNORE INTO drops (ts, src, proto, port) VALUES (?, ?, ?, ?)", 
                                 (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), item["src"], item["proto"], item["port"]))

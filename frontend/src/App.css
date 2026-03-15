@@ -351,6 +351,32 @@ input:focus, select:focus {
   background: rgba(16, 185, 129, 0.05);
 }
 
+.list-item-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.list-item-wrap .zone-btn {
+  flex: 1;
+}
+
+.del-icon {
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  opacity: 0.5;
+  transition: var(--transition);
+  padding: 8px;
+}
+
+.del-icon:hover {
+  color: var(--danger);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
 .zone-btn.ipset-active {
   border-color: var(--info);
   color: var(--info);
