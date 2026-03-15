@@ -212,6 +212,20 @@ function App() {
                             }}></div>
                         </button>
                     </div>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px', paddingLeft: '20px', borderLeft: '1px solid var(--card-border)'}}>
+                        <span style={{fontSize: '0.85em', color: 'var(--text-muted)'}}>Target</span>
+                        <select 
+                            value={zoneDetails?.target || 'default'} 
+                            onChange={(e) => apiAction(`/api/zone/${selectedZone}/target`, "POST", { target: e.target.value })}
+                            className="btn-mini"
+                            style={{padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--card-border)'}}
+                        >
+                            <option value="default">default</option>
+                            <option value="ACCEPT">ACCEPT</option>
+                            <option value="REJECT">REJECT</option>
+                            <option value="DROP">DROP</option>
+                        </select>
+                    </div>
                 </div>
                 <div className="details-grid">
                 
@@ -338,10 +352,21 @@ function App() {
                 <div className="details-grid">
                     <div className="detail-group">
                         <h4>Target Action</h4>
-                        <div className="tag-container">
+                        <div className="tag-container" style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
                             <span className={`tag ${policyDetails?.target === 'ACCEPT' ? 'port' : policyDetails?.target === 'DROP' ? 'banned' : 'service'}`} style={{fontSize: '1.1em', fontWeight: 'bold'}}>
                                 {policyDetails?.target || 'DEFAULT'}
                             </span>
+                            <select 
+                                value={policyDetails?.target || 'default'} 
+                                onChange={(e) => apiAction(`/api/policy/${selectedPolicy}/target`, "POST", { target: e.target.value })}
+                                className="btn-mini"
+                                style={{padding: '4px 10px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px solid var(--card-border)'}}
+                            >
+                                <option value="default">default</option>
+                                <option value="ACCEPT">ACCEPT</option>
+                                <option value="REJECT">REJECT</option>
+                                <option value="DROP">DROP</option>
+                            </select>
                         </div>
                     </div>
                     <div className="detail-group">

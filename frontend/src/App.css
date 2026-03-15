@@ -548,6 +548,18 @@ input:focus, select:focus {
 }
 .btn-mini-ban:hover { background: rgba(239, 68, 68, 0.2); }
 
+.btn-mini {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid var(--card-border);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-mini:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+
 /* ----------------------------------
    Snapshots & Misc
 ----------------------------------- */
