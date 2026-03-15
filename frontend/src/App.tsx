@@ -24,13 +24,11 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.2.0")
+  const [version, setVersion] = useState("v1.4.1")
 
   useEffect(() => {
-    fetch("https://api.github.com/repos/weby-homelab/firewalld-gui/releases/latest")
-      .then(res => res.json())
-      .then(data => { if(data.tag_name) setVersion(data.tag_name); })
-      .catch(e => console.error("Could not fetch version", e));
+    // Force set local version to override any fetch delays
+    setVersion("v1.4.1");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -344,24 +342,36 @@ function App() {
                 {/* ----------------------------------------- */}
 
                 <div className="detail-group">
-                  <h4>ICMP Blocks</h4>
-                  <div className="tag-container" style={{minHeight: '20px', marginBottom: '15px'}}>
+                  <h4>Active ICMP Blocks</h4>
+                  <div className="tag-container" style={{display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px'}}>
                     {zoneDetails && zoneDetails.icmp_blocks && zoneDetails.icmp_blocks.length > 0 ? (
                       zoneDetails.icmp_blocks.map((icmp: string) => (
-                        <span key={icmp} className="tag banned" style={{padding: '8px 12px', fontSize: '0.9rem'}}>
-                          <i className="fas fa-shield-alt mr-1" style={{fontSize: '0.7rem', opacity: 0.7}}></i>
-                          {icmp} 
+                        <div key={icmp} className="glass-card" style={{
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center', 
+                          padding: '12px 20px', 
+                          borderLeft: '4px solid var(--danger)',
+                          background: 'rgba(239, 68, 68, 0.05)'
+                        }}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                            <i className="fas fa-hand-paper" style={{color: 'var(--danger)', fontSize: '1.2rem'}}></i>
+                            <span style={{fontWeight: 'bold', fontSize: '1.1rem', letterSpacing: '0.5px'}}>{icmp.toUpperCase()}</span>
+                          </div>
                           <button 
+                            className="btn-mini-ban"
                             onClick={() => apiAction("/api/zone/" + selectedZone + "/icmp-block/" + encodeURIComponent(icmp), "DELETE")}
-                            style={{background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', marginLeft: '8px', padding: '2px', display: 'inline-flex', alignItems: 'center'}}
-                            title="Remove block"
+                            style={{padding: '8px 20px', fontSize: '0.9rem', textTransform: 'uppercase'}}
                           >
-                            <i className="fas fa-times-circle" style={{fontSize: '1rem'}}></i>
+                            <i className="fas fa-unlock mr-2"></i> Unblock
                           </button>
-                        </span>
+                        </div>
                       ))
                     ) : (
-                      <p className="note" style={{opacity: 0.5, fontStyle: 'italic'}}>No active ICMP blocks in this zone</p>
+                      <div className="empty-state-card glass-card" style={{padding: '20px', textAlign: 'center', opacity: 0.5}}>
+                        <i className="fas fa-check-circle" style={{fontSize: '1.5rem', marginBottom: '8px', color: 'var(--success)'}}></i>
+                        <p>No active ICMP blocks. All traffic allowed.</p>
+                      </div>
                     )}
                   </div>
                   

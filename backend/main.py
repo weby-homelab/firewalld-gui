@@ -216,12 +216,12 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
     masq = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--query-masquerade"]).strip()
     icmp_raw = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-icmp-blocks"])
     
-    # Robust parsing: handle spaces, commas, newlines and filter out garbage
+    # Ultra-robust parsing: split by any whitespace, filter out empty and system junk
     icmp_list = []
-    if icmp_raw and icmp_raw.strip():
-        # Split by any whitespace or comma
-        parts = re.split(r'[\s,]+', icmp_raw.strip())
-        icmp_list = [p.strip() for p in parts if p.strip() and p.strip().lower() not in ['(none)', 'no']]
+    if icmp_raw:
+        # Some versions return space-separated, some comma-separated
+        raw_parts = re.split(r'[\s,]+', str(icmp_raw).strip())
+        icmp_list = [p.strip() for p in raw_parts if p.strip() and p.strip().lower() not in ['(none)', 'no', 'none']]
     
     target = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--get-target"])
     
