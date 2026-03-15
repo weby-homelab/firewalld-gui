@@ -184,8 +184,19 @@ async def remove_service_port(name: str, port: str, u=Depends(get_current_user))
 
 @app.post("/api/service/create")
 async def create_service(name: str = Body(..., embed=True), u=Depends(get_current_user)):
-    res = run_cmd(["firewall-cmd", "--permanent", "--new-service=" + name])
-    log_action(u["username"], "CREATE_SERVICE", name); return {"result": res}
+    try:
+        # Check if service already exists
+        existing = run_cmd(["firewall-cmd", "--get-services"]).split()
+        if name in existing:
+            raise HTTPException(status_code=400, detail=f"Service '{name}' already exists")
+            
+        res = run_cmd(["firewall-cmd", "--permanent", "--new-service=" + name])
+        run_cmd(["firewall-cmd", "--reload"])
+        log_action(u["username"], "CREATE_SERVICE", name)
+        return {"result": res}
+    except Exception as e:
+        if isinstance(e, HTTPException): raise e
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/api/service/{name}")
 async def delete_service(name: str, u=Depends(get_current_user)):
