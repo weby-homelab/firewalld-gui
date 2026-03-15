@@ -233,15 +233,23 @@ button {
 }
 
 input, select {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.9); /* More opaque for better contrast */
   border: 1px solid var(--card-border);
-  color: var(--text-main);
+  color: var(--text-main) !important;
   padding: 10px 12px;
   border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 0.9rem;
   transition: var(--transition);
   width: 100%;
+  appearance: auto; /* Ensure browser default arrow is visible if needed */
+}
+
+/* Explicitly style options for different browsers */
+select option {
+  background-color: #1e293b; /* Dark slate */
+  color: #f8fafc; /* White text */
+  padding: 10px;
 }
 
 input:focus, select:focus {
@@ -581,16 +589,20 @@ input:focus, select:focus {
 .btn-mini-ban:hover { background: rgba(239, 68, 68, 0.2); }
 
 .btn-mini {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.15); /* More visible background */
+  color: var(--text-main) !important; /* Force text visibility */
   border: 1px solid var(--card-border);
-  padding: 2px 8px;
+  padding: 4px 10px;
   border-radius: var(--radius-sm);
   font-size: 0.8rem;
   cursor: pointer;
   transition: var(--transition);
+  font-weight: 500;
 }
-.btn-mini:hover { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+.btn-mini:hover { 
+  background: rgba(255, 255, 255, 0.25); 
+  border-color: rgba(255, 255, 255, 0.4); 
+}
 
 /* ----------------------------------
    Snapshots & Misc
