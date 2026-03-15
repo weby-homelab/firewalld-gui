@@ -1,10 +1,24 @@
-# Firewalld-GUI 🛡️
+<p align="center">
+  <a href="README_ENG.md">
+    <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
+  </a>
+  <a href="README.md">
+    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
+  </a>
+</p>
 
-A modern, fast, and powerful web interface for `firewalld`, specifically designed for servers running **AlmaLinux 10**, **Ubuntu 24.04**, and other contemporary Linux distributions.
+<br>
 
-![Version](https://img.shields.io/badge/version-1.4.2-orange)
-![License](https://img.shields.io/badge/license-MIT-blue)
-![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)
+# 🛡️ Firewalld-GUI (Weby Homelab)
+*Modern, fast, and aesthetic network security management for Linux.*
+
+[![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![System](https://img.shields.io/badge/system-AlmaLinux_|_Ubuntu_|_RHEL-red.svg)]()
+
+**Firewalld-GUI** is a professional web-based control panel for managing `firewalld` and `Fail2Ban`, specifically built for servers running **AlmaLinux 10**, **Ubuntu 24.04**, and other modern distributions. It transforms complex CLI commands into an intuitive dashboard with real-time analytics.
+
+---
 
 ## 🏗 System Architecture
 
@@ -30,31 +44,37 @@ graph TD
     style FW fill:#ff9900,stroke:#333,stroke-width:2px
 ```
 
+---
+
 ## 🚀 Key Features
 
 ### 🛠 Service Management (Service Architect)
-- **Custom Services**: Define your own service structures by grouping ports and protocols.
-- **Informative UI**: View custom service ports directly in the list view.
+- **Custom Services**: Create your own service definitions by grouping ports and protocols.
+- **Informative Cards**: View service contents (ports) directly in the list without extra clicks.
 - **Smart Search**: Instantly filter through 260+ system service definitions.
-- **Collapsible System List**: System services are collapsed by default for a clutter-free experience.
+- **Collapsible UI**: System services are collapsed by default for visual clarity.
 
 ### 🧱 Object Lifecycle
-- **Zones & Policies**: Create or delete firewall objects directly from your browser.
-- **Global Config**: Manage `firewalld.conf` settings, change Default Zone, and adjust Log Denied levels.
+- **Zones & Policies**: Create, edit, and delete firewall objects via browser.
+- **Global Config**: Full access to `firewalld.conf` (Default Zone, Log Denied).
+- **Target Actions**: Configure default behavior (ACCEPT, REJECT, DROP) for any zone.
 
-### 🔍 Threat Intelligence & Security
-- **Geo-IP Integration**: Track the origin country of every blocked attack in real-time.
-- **Anomaly Detection**: Automated Telegram alerts for traffic spikes (DDoS/Brute-force).
-- **ICMP Management**: Full control over ICMP types with instant application and high-visibility card design.
+### 🔍 Threat Intelligence & Analytics
+- **Geo-IP Integration**: Track the origin country of every attack in real-time.
+- **Anomaly Detection**: Automatic Telegram alerts for traffic spikes.
+- **Fail2Ban Control**: Full control over active bans and jail status.
+- **Visual Analytics**: Real-time activity charts for dropped packets.
 
 ### 🛡 Safety & Reliability
-- **Safe Mode**: Automatic snapshots created before every configuration change.
-- **Snapshot Restoration**: Instant rollback to previous stable configurations.
-- **Dual-Channel Execution**: Backend merges stdout/stderr for 100% reliable command execution on new Linux kernels.
+- **Auto-Snapshots**: System automatically backs up configuration before any change.
+- **Dual-Channel Execution**: Backend merges stdout/stderr for 100% reliability on new Linux kernels.
+- **Safe Migration**: Guided wizard for secure SSH port migration.
 
-## 📦 Installation (Full Stack Docker)
+---
 
-To run the complete project, create a `docker-compose.yml` file:
+## 📦 Installation (Docker Compose)
+
+To run the full stack (Backend, Frontend, Nginx), use the following `docker-compose.yml`:
 
 ```yaml
 services:
@@ -67,6 +87,7 @@ services:
       - ./data:/app/data
       - /etc/firewalld:/etc/firewalld
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+      - /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock
       - /var/log:/var/log:ro
     restart: always
 
@@ -81,14 +102,22 @@ services:
     container_name: firewalld-gui-nginx
     network_mode: host
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - firewalld-backend
       - firewalld-frontend
     restart: always
 ```
 
-> **Note:** You will also need the `nginx.conf` file for the Nginx container to function correctly. You can find it in the `docker/` folder of this repository.
+---
+
+## 📋 System Requirements
+- **OS:** AlmaLinux 9/10, Ubuntu 22.04/24.04, RHEL 9+.
+- **Dependencies:** `firewalld`, `fail2ban`, `docker`.
+- **Access:** `root` privileges (or `privileged` in Docker) for kernel interaction.
 
 ---
-© 2026 **Weby Homelab**
+<p align="center">
+  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
+  <strong>✦ 2026 Weby Homelab ✦</strong>
+</p>
