@@ -24,7 +24,7 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.1.0")
+  const [version, setVersion] = useState("v1.2.0")
 
   useEffect(() => {
     fetch("https://api.github.com/repos/weby-homelab/firewalld-gui/releases/latest")
@@ -32,7 +32,7 @@ function App() {
       .then(data => { if(data.tag_name) setVersion(data.tag_name); })
       .catch(e => console.error("Could not fetch version", e));
   }, []);
-  const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "" })
+  const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
   const [showSafeMigrate, setShowSafeMigrate] = useState(false)
   const [migrateStep, setMigrateStep] = useState(1)
@@ -40,6 +40,8 @@ function App() {
   const [policies, setPolicies] = useState<string[]>([])
   const [selectedPolicy, setSelectedPolicy] = useState<string | null>(null)
   const [policyDetails, setPolicyDetails] = useState<any>(null)
+  const [services, setServices] = useState<string[]>([])
+  const [globalConfig, setGlobalConfig] = useState<any>(null)
 
   const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
   const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp"]
@@ -75,6 +77,8 @@ function App() {
         setZones((await f("/api/zones/all")).zones || [])
         setIpsets((await f("/api/ipsets/all")).ipsets || [])
         setPolicies((await f("/api/policies/all")).policies || [])
+        setServices((await f("/api/services/all")).services || [])
+        setGlobalConfig(await f("/api/config/global"))
         if (availableIcmpTypes.length === 0) {
             setAvailableIcmpTypes((await f("/api/icmptypes/all")).icmptypes || [])
         }
@@ -168,11 +172,12 @@ function App() {
       <header className="glass-card header">
         <div className="brand"><h1>Firewalld-GUI</h1><span className="badge">{version}</span></div>
         <nav className="view-nav">
-          {["config", "monitoring", "snapshots", "admin", "settings"].map(v => (
-            (v !== "settings" && v !== "admin" || user?.role === "superadmin") && 
+          {["config", "services", "monitoring", "snapshots", "admin", "settings"].map(v => (
+            (v !== "settings" && v !== "admin" || user?.role === "superadmin") &&
             <button key={v} className={view===v?"nav-btn active":"nav-btn"} onClick={()=>setView(v)}>{v.charAt(0).toUpperCase()+v.slice(1)}</button>
           ))}
         </nav>
+
         <div className="header-actions">
           <div className="user-tag">{user?.username} ({user?.role})</div>
           <button className="btn btn-reload" onClick={() => apiAction("/api/reload", "POST")} disabled={loading}>
@@ -187,11 +192,77 @@ function App() {
           <>
             <div className="side-pane">
               <section className="glass-card"><h3>Status: <span className="text-success">{status?.firewalld_state}</span></h3></section>
-              <section className="glass-card"><h3>Zones</h3><div className="zone-list">{zones.map(z => (<button key={z} className={selectedZone===z?"zone-btn active":"zone-btn"} onClick={()=>{setSelectedZone(z);setSelectedIpset(null);setSelectedPolicy(null);}}>{z}</button>))}</div></section>
-              <section className="glass-card"><h3>IP Sets</h3><div className="add-form" style={{marginBottom:"10px"}}><input value={inputs.ipset} onChange={e=>setInputs({...inputs,ipset:e.target.value})} placeholder="New set..." /><button onClick={()=>{apiAction("/api/ipset/create","POST",{name:inputs.ipset});setInputs({...inputs,ipset:""})}}>+</button></div>
-                <div className="zone-list">{ipsets.map(s => (<button key={s} className={selectedIpset===s?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedIpset(s);setSelectedZone(null);setSelectedPolicy(null);}}>{s}</button>))}</div></section>
-              {policies.length > 0 && <section className="glass-card"><h3>Policies (Routing)</h3>
-                <div className="zone-list">{policies.map(p => (<button key={p} className={selectedPolicy===p?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedPolicy(p);setSelectedZone(null);setSelectedIpset(null);}}>{p}</button>))}</div></section>}
+              
+              <section className="glass-card">
+                <div className="group-header"><h3>Zones</h3></div>
+                <div className="add-form" style={{marginBottom:"10px"}}>
+                  <input value={inputs.new_zone} onChange={e=>setInputs({...inputs,new_zone:e.target.value})} placeholder="New zone..." />
+                  <button onClick={()=>{apiAction("/api/zone/create","POST",{name:inputs.new_zone});setInputs({...inputs,new_zone:""})}}>+</button>
+                </div>
+                <div className="zone-list">
+                  {zones.map(z => (
+                    <div key={z} className="list-item-wrap">
+                      <button className={selectedZone===z?"zone-btn active":"zone-btn"} onClick={()=>{setSelectedZone(z);setSelectedIpset(null);setSelectedPolicy(null);}}>{z}</button>
+                      {z !== "public" && z !== "trusted" && <i className="fas fa-trash del-icon" onClick={()=>apiAction("/api/zone/"+z, "DELETE")}></i>}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="glass-card">
+                <h3>Policies (Routing)</h3>
+                <div className="add-form" style={{marginBottom:"10px"}}>
+                  <input value={inputs.new_policy} onChange={e=>setInputs({...inputs,new_policy:e.target.value})} placeholder="New policy..." />
+                  <button onClick={()=>{apiAction("/api/policy/create","POST",{name:inputs.new_policy});setInputs({...inputs,new_policy:""})}}>+</button>
+                </div>
+                <div className="zone-list">
+                  {policies.map(p => (
+                    <div key={p} className="list-item-wrap">
+                      <button className={selectedPolicy===p?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedPolicy(p);setSelectedZone(null);setSelectedIpset(null);}}>{p}</button>
+                      <i className="fas fa-trash del-icon" onClick={()=>apiAction("/api/policy/"+p, "DELETE")}></i>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="glass-card">
+                <h3>IP Sets</h3>
+                <div className="add-form" style={{marginBottom:"10px"}}>
+                  <input value={inputs.ipset} onChange={e=>setInputs({...inputs,ipset:e.target.value})} placeholder="New set..." />
+                  <button onClick={()=>{apiAction("/api/ipset/create","POST",{name:inputs.ipset});setInputs({...inputs,ipset:""})}}>+</button>
+                </div>
+                <div className="zone-list">{ipsets.map(s => (<button key={s} className={selectedIpset===s?"zone-btn active ipset-active":"zone-btn"} onClick={()=>{setSelectedIpset(s);setSelectedZone(null);setSelectedPolicy(null);}}>{s}</button>))}</div>
+              </section>
+
+              <section className="glass-card">
+                <h3>Global Config</h3>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                  <div>
+                    <label style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Default Zone</label>
+                    <select 
+                      value={globalConfig?.default_zone || ''} 
+                      onChange={e => apiAction("/api/config/global", "POST", {default_zone: e.target.value})}
+                      className="btn-mini" style={{width: '100%', marginTop: '4px'}}
+                    >
+                      {zones.map(z => <option key={z} value={z}>{z}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Log Denied</label>
+                    <select 
+                      value={globalConfig?.log_denied || 'off'} 
+                      onChange={e => apiAction("/api/config/global", "POST", {log_denied: e.target.value})}
+                      className="btn-mini" style={{width: '100%', marginTop: '4px'}}
+                    >
+                      <option value="off">off</option>
+                      <option value="all">all</option>
+                      <option value="unicast">unicast</option>
+                      <option value="broadcast">broadcast</option>
+                      <option value="multicast">multicast</option>
+                    </select>
+                  </div>
+                </div>
+              </section>
             </div>
             <div className="main-pane">
               {selectedZone && <section className="glass-card details-view">
@@ -397,6 +468,35 @@ function App() {
           </>
         )}
 
+        {view === "services" && (
+          <div className="wide-pane">
+            <section className="glass-card">
+              <h2>Custom Services Management</h2>
+              <p className="note" style={{marginBottom: '20px'}}>Create and manage custom service definitions. System services are protected.</p>
+              
+              <div className="add-form" style={{maxWidth: '500px', marginBottom: '30px'}}>
+                <input value={inputs.new_service} onChange={e=>setInputs({...inputs,new_service:e.target.value})} placeholder="Service Name (e.g. my-app)" />
+                <button className="btn-add-full" onClick={()=>{apiAction("/api/service/create","POST",{name:inputs.new_service});setInputs({...inputs,new_service:""})}}>Create Service</button>
+              </div>
+
+              <div className="tag-container" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px'}}>
+                {services.map(s => (
+                  <div key={s} className="glass-card service-item" style={{padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                      <i className="fas fa-concierge-bell" style={{color: 'var(--info)', opacity: 0.7}}></i>
+                      <span style={{fontWeight: 500}}>{s}</span>
+                    </div>
+                    {/* Simplified protection: if service doesn't contain common system prefixes, allow delete */}
+                    {!["ssh", "http", "https", "dns", "dhcp", "ftp", "mysql", "postgresql", "redis"].includes(s) && (
+                      <i className="fas fa-trash del-icon" onClick={()=>apiAction("/api/service/"+s, "DELETE")}></i>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
+
         {view === "monitoring" && (
           <div className="wide-pane">
             <section className="glass-card"><h2>Attack Statistics (Last 24h)</h2><div style={{height:"180px", marginTop:"15px"}}><ResponsiveContainer width="100%" height="100%"><LineChart data={stats}><XAxis dataKey="hour" stroke="#666"/><YAxis stroke="#666"/><Tooltip/><Line type="monotone" dataKey="count" stroke="#ff4444" strokeWidth={3}/></LineChart></ResponsiveContainer></div></section>
@@ -409,10 +509,12 @@ function App() {
               </div>
 
               {monitorView === "drops" && (
-                <div className="table-container"><table className="log-table"><thead><tr><th>Time</th><th>Source IP</th><th>Proto</th><th>Port</th><th>Action</th></tr></thead>
-                <tbody>{fwLogs.map((l,i)=>(<tr key={i}><td>{l.time}</td><td className="text-danger clickable" onClick={async ()=>{const r=await (await fetch("/api/whois/"+l.src,{headers:authHeaders})).json();setWhois(r)}}>{l.src}</td><td>{l.proto}</td><td>{l.port}</td>
+                <div className="table-container"><table className="log-table"><thead><tr><th>Time</th><th>IP</th><th>Geo</th><th>Proto</th><th>Port</th><th>Action</th></tr></thead>
+                <tbody>{fwLogs.map((l,i)=>(<tr key={i}><td>{l.time}</td><td className="text-danger clickable" onClick={async ()=>{const r=await (await fetch("/api/whois/"+l.src,{headers:authHeaders})).json();setWhois(r)}}>{l.src}</td>
+                  <td><span className="badge" style={{background: 'rgba(255,255,255,0.05)', fontSize: '0.7rem'}}>{l.country}</span></td>
+                  <td>{l.proto}</td><td>{l.port}</td>
                   <td><button className="btn-mini-ban" onClick={()=>apiAction("/api/quick-ban","POST",{ip:l.src})}>🚫 Ban IP</button></td></tr>))}
-                  {fwLogs.length === 0 && <tr><td colSpan={5} className="empty">No drops recorded</td></tr>}
+                  {fwLogs.length === 0 && <tr><td colSpan={6} className="empty">No drops recorded</td></tr>}
                 </tbody></table></div>
               )}
 
