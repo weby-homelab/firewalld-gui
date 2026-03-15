@@ -63,11 +63,18 @@ def save_users(users):
 
 def run_cmd(cmd):
     try:
+        # Capture both stdout and stderr to handle all firewall-cmd outputs
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e: raise HTTPException(status_code=500, detail=e.stderr)
+        out = result.stdout.strip()
+        if not out and result.stderr:
+            out = result.stderr.strip()
+        return out
+    except subprocess.CalledProcessError as e:
+        # Even on error, firewalld might return useful info
+        return e.stdout.strip() or e.stderr.strip() or ""
 
-@app.get("/api/auth/setup-needed")
+@app.get("/api/status")
+
 async def is_setup_needed(): return {"setup_needed": len(load_users()) == 0}
 
 @app.post("/api/auth/setup")
