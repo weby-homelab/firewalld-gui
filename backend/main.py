@@ -150,9 +150,18 @@ async def get_services(u=Depends(get_current_user)):
     
     result = []
     for s in all_services:
+        is_custom = s in custom_services
+        ports = []
+        if is_custom:
+            try:
+                ports_raw = run_cmd(["firewall-cmd", "--permanent", "--service=" + s, "--get-ports"])
+                ports = ports_raw.split()
+            except: pass
+            
         result.append({
             "name": s,
-            "is_custom": s in custom_services
+            "is_custom": is_custom,
+            "ports": ports
         })
     return {"services": result}
 
