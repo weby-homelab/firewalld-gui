@@ -257,6 +257,7 @@ async def add_item(name: str, type: str, data: dict = Body(None), u=Depends(get_
     
     if type == "masquerade":
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--add-masquerade"])
+        run_cmd(["firewall-cmd", "--reload"])
         val_log = "enabled"
     else:
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--add-{type}={val}"])
@@ -265,10 +266,12 @@ async def add_item(name: str, type: str, data: dict = Body(None), u=Depends(get_
     log_action(u["username"], f"ADD_{type.upper()}", f"Zone: {name}, Val: {val_log}")
     return {"result": res}
 
+@app.delete("/api/zone/{name}/{type}")
 @app.delete("/api/zone/{name}/{type}/{val:path}")
-async def remove_item(name: str, type: str, val: str, u=Depends(get_current_user)):
+async def remove_item(name: str, type: str, val: str = None, u=Depends(get_current_user)):
     if type == "masquerade":
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--remove-masquerade"])
+        run_cmd(["firewall-cmd", "--reload"])
     else:
         res = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, f"--remove-{type}={val}"])
         
