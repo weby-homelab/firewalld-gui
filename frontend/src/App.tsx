@@ -44,6 +44,7 @@ function App() {
   const [selectedService, setSelectedService] = useState<string | null>(null)
   const [serviceDetails, setServiceDetails] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [showSystem, setShowSystem] = useState(false)
   const [globalConfig, setGlobalConfig] = useState<any>(null)
 
   const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
@@ -502,7 +503,10 @@ function App() {
                   </div>
 
                   <div className="detail-group">
-                    <h4>Custom Services ({services.filter(s => s.is_custom).length})</h4>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                      <h4>Custom Services ({services.filter(s => s.is_custom).length})</h4>
+                      <p className="note" style={{fontSize: '0.75rem'}}>User-defined definitions</p>
+                    </div>
                     <div className="tag-container" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginTop: '10px'}}>
                       {services.filter(s => s.is_custom && s.name.includes(searchTerm)).map(s => (
                         <div 
@@ -518,20 +522,36 @@ function App() {
                           <i className="fas fa-trash del-icon" onClick={(e)=>{e.stopPropagation(); apiAction("/api/service/"+s.name, "DELETE"); if(selectedService===s.name)setSelectedService(null)}}></i>
                         </div>
                       ))}
-                      {services.filter(s => s.is_custom).length === 0 && <p className="empty">No custom services created yet</p>}
+                      {services.filter(s => s.is_custom).length === 0 && (
+                        <div className="empty-state-card glass-card" style={{gridColumn: '1 / -1', padding: '30px', textAlign: 'center', opacity: 0.6}}>
+                          <i className="fas fa-plus-circle" style={{fontSize: '2rem', marginBottom: '10px', display: 'block'}}></i>
+                          <p>No custom services yet. Use the form above to define your own.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="detail-group" style={{marginTop: '40px'}}>
-                    <h4>System Services ({services.filter(s => !s.is_custom).length})</h4>
-                    <div className="tag-container" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', marginTop: '10px', opacity: 0.8}}>
-                      {services.filter(s => !s.is_custom && s.name.includes(searchTerm)).map(s => (
-                        <div key={s.name} className="glass-card" style={{padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'}}>
-                          <i className="fas fa-lock" style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}></i>
-                          <span style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>{s.name}</span>
-                        </div>
-                      ))}
+                  <div className="detail-group" style={{marginTop: '40px', borderTop: '1px solid var(--card-border)', paddingTop: '20px'}}>
+                    <div 
+                      style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer'}}
+                      onClick={() => setShowSystem(!showSystem)}
+                    >
+                      <h4 style={{margin: 0}}>System Services ({services.filter(s => !s.is_custom).length})</h4>
+                      <button className="btn-mini" style={{opacity: 0.7}}>
+                        {showSystem ? "Collapse ▴" : "Expand ▾"}
+                      </button>
                     </div>
+                    
+                    {showSystem && (
+                      <div className="tag-container" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', marginTop: '15px', opacity: 0.7}}>
+                        {services.filter(s => !s.is_custom && s.name.includes(searchTerm)).map(s => (
+                          <div key={s.name} className="glass-card" style={{padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'}}>
+                            <i className="fas fa-lock" style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}></i>
+                            <span style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>{s.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </section>
               </div>
