@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.2")
+  const [version, setVersion] = useState("v1.5.3")
 
   useEffect(() => {
-    setVersion("v1.5.2");
+    setVersion("v1.5.3");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -433,6 +433,20 @@ function App() {
                   </div>
                 </div>
                 <div className="detail-group">
+                  <h4>Services</h4>
+                  <div className="tag-container">
+                    {zoneDetails?.services?.map((s: string) => (
+                      <span key={s} className="tag service">
+                        {s} <i onClick={() => apiAction("/api/zone/" + selectedZone + "/service/" + encodeURIComponent(s), "DELETE")}>×</i>
+                      </span>
+                    ))}
+                    <div className="add-form">
+                      <input value={inputs.service} onChange={e => setInputs({ ...inputs, service: e.target.value })} placeholder="service name" />
+                      <button onClick={() => { apiAction("/api/zone/" + selectedZone + "/service", "POST", { service: inputs.service }); setInputs({ ...inputs, service: "" }) }}>+</button>
+                    </div>
+                  </div>
+                </div>
+                <div className="detail-group">
                   <h4>Port Forwarding (NAT)</h4>
                   <div className="nat-list">
                     {zoneDetails?.forward_ports?.filter((f: string) => f.trim() !== "").map((f: string) => {
@@ -705,36 +719,6 @@ function App() {
 
             {whois && <div className="whois-modal" onClick={()=>setWhois(null)}><div className="glass-card whois-content" onClick={e=>e.stopPropagation()}><h3>Whois: {whois.ip || whois.query}</h3>
               <div className="whois-data"><p><b>Location:</b> {whois.country}, {whois.city}</p><p><b>ISP:</b> {whois.isp}</p><p><b>Org:</b> {whois.org}</p><button className="btn-reload" onClick={()=>setWhois(null)}>Close</button></div></div></div>}
-
-            {showSafeMigrate && (
-              <div className="whois-modal" onClick={() => setShowSafeMigrate(false)}>
-                <div className="glass-card whois-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "450px" }}>
-                  <h3>🛡️ Safe Port Migration</h3>
-                  <div className="migrate-workflow">
-                    {migrateStep === 1 ? (
-                      <>
-                        <p className="note"><b>Step 1:</b> Add your new access port first to ensure you don't lose connection.</p>
-                        <div className="add-form" style={{ marginTop: "15px" }}>
-                          <input placeholder="New Port (e.g. 4444/tcp)" id="new-migrate-port" />
-                          <button className="btn-reload" onClick={async () => {
-                            const p = (document.getElementById('new-migrate-port') as HTMLInputElement).value;
-                            if (!p) return;
-                            await apiAction("/api/zone/" + selectedZone + "/port", "POST", { port: p });
-                            setMigrateStep(2);
-                          }}>Add & Continue</button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p className="note text-success"><b>Step 2:</b> New port added! You can now safely remove old protected ports from the main dashboard.</p>
-                        <p className="note" style={{fontSize: "0.8em", opacity: 0.7}}>Unlock mode is active. Deletion enabled for protected ports.</p>
-                        <button className="btn-reload" onClick={() => setShowSafeMigrate(false)} style={{ marginTop: "15px", width: "100%" }}>Finish & Exit</button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -766,6 +750,36 @@ function App() {
             {snapshots.map(s=>(<div key={s} className="snap-item"><span>{s}</span><button className="btn-reload" onClick={()=>{if(confirm("Restore?"))apiAction("/api/snapshots/restore/"+s,"POST")}} style={{background:"#ffaa00"}}>Restore</button></div>))}
             {snapshots.length === 0 && <p className="empty">No snapshots recorded yet.</p>}
           </div></section></div>
+        )}
+
+        {showSafeMigrate && (
+          <div className="whois-modal" onClick={() => setShowSafeMigrate(false)}>
+            <div className="glass-card whois-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "450px" }}>
+              <h3>🛡️ Safe Port Migration</h3>
+              <div className="migrate-workflow">
+                {migrateStep === 1 ? (
+                  <>
+                    <p className="note"><b>Step 1:</b> Add your new access port first to ensure you don't lose connection.</p>
+                    <div className="add-form" style={{ marginTop: "15px" }}>
+                      <input placeholder="New Port (e.g. 4444/tcp)" id="new-migrate-port" />
+                      <button className="btn-reload" onClick={async () => {
+                        const p = (document.getElementById('new-migrate-port') as HTMLInputElement).value;
+                        if (!p) return;
+                        await apiAction("/api/zone/" + selectedZone + "/port", "POST", { port: p });
+                        setMigrateStep(2);
+                      }}>Add & Continue</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="note text-success"><b>Step 2:</b> New port added! You can now safely remove old protected ports from the main dashboard.</p>
+                    <p className="note" style={{fontSize: "0.8em", opacity: 0.7}}>Unlock mode is active. Deletion enabled for protected ports.</p>
+                    <button className="btn-reload" onClick={() => setShowSafeMigrate(false)} style={{ marginTop: "15px", width: "100%" }}>Finish & Exit</button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </main>
       <footer className="footer">© 2026 Weby Homelab • Running on AlmaLinux 10</footer>
