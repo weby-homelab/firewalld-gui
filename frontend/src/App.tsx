@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.6")
+  const [version, setVersion] = useState("v1.5.7")
 
   useEffect(() => {
-    setVersion("v1.5.6");
+    setVersion("v1.5.7");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -295,35 +295,37 @@ function App() {
             </div>
             <div className="main-pane">
               {selectedZone && <section className="glass-card details-view">
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px'}}>
-                    <h2 style={{margin: 0, border: 'none', padding: 0}}>Zone: {selectedZone}</h2>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                        <span style={{fontSize: '0.85em', color: 'var(--text-muted)'}}>Masquerade (NAT)</span>
-                        <button 
-                            onClick={() => apiAction(`/api/zone/${selectedZone}/masquerade`, zoneDetails?.masquerade ? "DELETE" : "POST", { value: "yes" })}
-                            style={{
-                                background: zoneDetails?.masquerade ? 'var(--success)' : 'rgba(255,255,255,0.1)',
-                                border: 'none', borderRadius: '20px', width: '40px', height: '22px', position: 'relative', cursor: 'pointer', transition: '0.3s'
-                            }}
-                        >
-                            <div style={{
-                                width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', 
-                                left: zoneDetails?.masquerade ? '20px' : '2px', transition: '0.3s'
-                            }}></div>
-                        </button>
-                    </div>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '20px', paddingLeft: '20px', borderLeft: '1px solid var(--card-border)'}}>
-                        <span style={{fontSize: '0.85em', color: 'var(--text-muted)'}}>Target</span>
-                        <select 
-                            value={zoneDetails?.target || 'default'} 
-                            onChange={(e) => apiAction(`/api/zone/${selectedZone}/target`, "POST", { target: e.target.value })}
-                            className="btn-mini"
-                        >
-                            <option value="default">default</option>
-                            <option value="ACCEPT">ACCEPT</option>
-                            <option value="REJECT">REJECT</option>
-                            <option value="DROP">DROP</option>
-                        </select>
+                <div style={{display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px', gap: '15px'}}>
+                    <h2 style={{margin: 0}}>Zone: {selectedZone}</h2>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                            <span style={{fontSize: '0.85em', color: 'var(--text-muted)'}}>Masquerade (NAT)</span>
+                            <button 
+                                onClick={() => apiAction(`/api/zone/${selectedZone}/masquerade`, zoneDetails?.masquerade ? "DELETE" : "POST", { value: "yes" })}
+                                style={{
+                                    background: zoneDetails?.masquerade ? 'var(--success)' : 'rgba(255,255,255,0.1)',
+                                    border: 'none', borderRadius: '20px', width: '40px', height: '22px', position: 'relative', cursor: 'pointer', transition: '0.3s'
+                                }}
+                            >
+                                <div style={{
+                                    width: '18px', height: '18px', background: '#fff', borderRadius: '50%', position: 'absolute', top: '2px', 
+                                    left: zoneDetails?.masquerade ? '20px' : '2px', transition: '0.3s'
+                                }}></div>
+                            </button>
+                        </div>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '20px', borderLeft: '1px solid var(--card-border)'}}>
+                            <span style={{fontSize: '0.85em', color: 'var(--text-muted)'}}>Target</span>
+                            <select 
+                                value={zoneDetails?.target || 'default'} 
+                                onChange={(e) => apiAction(`/api/zone/${selectedZone}/target`, "POST", { target: e.target.value })}
+                                className="btn-mini"
+                            >
+                                <option value="default">default</option>
+                                <option value="ACCEPT">ACCEPT</option>
+                                <option value="REJECT">REJECT</option>
+                                <option value="DROP">DROP</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div className="details-grid">
