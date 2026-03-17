@@ -338,11 +338,22 @@ input:focus, select:focus {
   gap: 32px;
 }
 
+.glass-card h2, .glass-card h3, .glass-card h4 {
+  text-align: left;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
 .group-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  width: 100%;
+}
+
+.group-header h3, .group-header h4 {
+  margin-bottom: 0;
 }
 
 .detail-group h4 {
