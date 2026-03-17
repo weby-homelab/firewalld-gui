@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.0")
+  const [version, setVersion] = useState("v1.5.1")
 
   useEffect(() => {
-    setVersion("v1.5.0");
+    setVersion("v1.5.1");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -182,7 +182,16 @@ function App() {
   return (
     <div className="container-fluid">
       <header className="glass-card header">
-        <div className="brand"><h1>Firewalld-GUI</h1><span className="badge">{version}</span></div>
+        <div className="brand">
+          <h1>Firewalld-GUI</h1>
+          <span className="badge">{version}</span>
+          {status?.firewalld_state && (
+            <span className={`status-pill ${status.firewalld_state === 'running' ? 'online' : 'offline'}`} style={{marginLeft: '10px'}}>
+              <i className={`fas fa-circle`} style={{fontSize: '0.6rem', marginRight: '5px'}}></i>
+              {status.firewalld_state}
+            </span>
+          )}
+        </div>
         <nav className="view-nav">
           {["config", "services", "monitoring", "snapshots", "admin", "settings"].map(v => (
             (v !== "settings" && v !== "admin" || user?.role === "superadmin") &&
@@ -409,6 +418,13 @@ function App() {
                           <i onClick={() => apiAction("/api/zone/" + selectedZone + "/port/" + encodeURIComponent(p), "DELETE")}>×</i>
                         }
                       </span>
+                    ))}
+                    {zoneDetails?.service_ports && Object.entries(zoneDetails.service_ports).map(([svc, svc_p]: [string, any]) => (
+                      svc_p.map((p: string) => (
+                        <span key={svc + p} className="tag service" style={{opacity: 0.8, borderStyle: 'dashed'}} title={`Open via service: ${svc}`}>
+                          {p} <small style={{fontSize: '0.65rem', marginLeft: '4px', opacity: 0.7}}>({svc})</small>
+                        </span>
+                      ))
                     ))}
                     <div className="add-form">
                       <input value={inputs.port} onChange={e => setInputs({ ...inputs, port: e.target.value })} placeholder="80/tcp" />
