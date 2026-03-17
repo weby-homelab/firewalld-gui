@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 import subprocess, json, os, re, requests, shutil, sqlite3
 
-SECRET_KEY = "super-secret-firewalld-gui-key-2026"
+SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-firewalld-gui-key-2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
@@ -70,11 +70,13 @@ def run_cmd(cmd):
             out = result.stderr.strip()
         return out
     except subprocess.CalledProcessError as e:
-        # Even on error, firewalld might return useful info
-        return e.stdout.strip() or e.stderr.strip() or ""
+        err = e.stderr.strip() or e.stdout.strip() or str(e)
+        if "already" in err.lower(): return f"Success: {err}" # Handle 'already' cases gracefully
+        raise HTTPException(status_code=400, detail=err)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/status")
-
+@app.get("/api/auth/setup-needed")
 async def is_setup_needed(): return {"setup_needed": len(load_users()) == 0}
 
 @app.post("/api/auth/setup")
@@ -514,9 +516,20 @@ async def get_snaps(u=Depends(get_current_user)):
 
 @app.post("/api/snapshots/restore/{n}")
 async def restore_sn(n: str, u=Depends(get_current_user)):
-    if ".." in n or "/" in n: raise HTTPException(status_code=400, detail="Invalid snapshot name")
+    # Secure filename check
+    if not n or ".." in n or "/" in n or "\\" in n: 
+        raise HTTPException(status_code=400, detail="Invalid snapshot name")
+    
     snap_path = os.path.join(SNAPSHOTS_DIR, n)
-    if not os.path.exists(snap_path): raise HTTPException(status_code=404, detail="Snapshot not found")
-    shutil.copytree(snap_path, "/etc/firewalld", dirs_exist_ok=True); run_cmd(["firewall-cmd", "--reload"])
-    log_action(u["username"], "RESTORE", n); return {"status": "success"}
+    # Ensure the resolved path is actually inside SNAPSHOTS_DIR
+    if not os.path.abspath(snap_path).startswith(os.path.abspath(SNAPSHOTS_DIR)):
+        raise HTTPException(status_code=400, detail="Path traversal attempt detected")
+        
+    if not os.path.exists(snap_path): 
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+        
+    shutil.copytree(snap_path, "/etc/firewalld", dirs_exist_ok=True)
+    run_cmd(["firewall-cmd", "--reload"])
+    log_action(u["username"], "RESTORE", n)
+    return {"status": "success"}
 
