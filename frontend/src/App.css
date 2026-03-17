@@ -100,6 +100,28 @@ body {
   letter-spacing: -0.5px;
 }
 
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.status-pill.online {
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-pill.offline {
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 .badge {
   background: var(--primary);
   color: white;
