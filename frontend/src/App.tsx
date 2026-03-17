@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.4.3")
+  const [version, setVersion] = useState("v1.5.0")
 
   useEffect(() => {
-    setVersion("v1.4.3");
+    setVersion("v1.5.0");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -45,7 +45,7 @@ function App() {
   const [globalConfig, setGlobalConfig] = useState<any>(null)
 
   const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
-  const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp"]
+  const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp", "8080/tcp", "3100/tcp"]
 
   const logout = () => { localStorage.removeItem("fm_token"); setToken(null); setUser(null) }
 
