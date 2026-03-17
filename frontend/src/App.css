@@ -340,8 +340,11 @@ input:focus, select:focus {
 
 .glass-card h2, .glass-card h3, .glass-card h4 {
   text-align: left;
-  margin-bottom: 16px;
+}
+
+.section-title {
   width: 100%;
+  margin-bottom: 16px;
 }
 
 .group-header {
