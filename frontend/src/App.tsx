@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.5")
+  const [version, setVersion] = useState("v1.5.6")
 
   useEffect(() => {
-    setVersion("v1.5.5");
+    setVersion("v1.5.6");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -155,11 +155,20 @@ function App() {
 
   if (setupNeeded === true) return (
     <div className="auth-screen">
-      <form className="glass-card auth-card" onSubmit={async (e:any)=>{
+      <form className="glass-card auth-card" style={{maxWidth: '400px'}} onSubmit={async (e:any)=>{
         e.preventDefault();
+        const user = e.target.user.value;
+        const pass = e.target.pass.value;
+        const confirmPass = e.target.confirm_pass.value;
+        
+        if (pass !== confirmPass) {
+          alert("Passwords do not match!");
+          return;
+        }
+
         const res = await fetch("/api/auth/setup", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: e.target.user.value, password: e.target.pass.value })
+          body: JSON.stringify({ username: user, password: pass })
         });
         if (res.ok) { alert("Admin created! Log in now."); setSetupNeeded(false); }
       }}>
@@ -167,6 +176,7 @@ function App() {
         <p className="note">Create first Superadmin</p>
         <input name="user" placeholder="Username" required />
         <input name="pass" type="password" placeholder="Password" required />
+        <input name="confirm_pass" type="password" placeholder="Confirm Password" required />
         <button className="btn-reload" type="submit">Create Admin</button>
       </form>
     </div>
@@ -212,8 +222,6 @@ function App() {
         {view === "config" && (
           <>
             <div className="side-pane">
-              <section className="glass-card"><h3>Status: <span className="text-success">{status?.firewalld_state}</span></h3></section>
-              
               <section className="glass-card">
                 <div className="group-header"><h3>Zones</h3></div>
                 <div className="add-form" style={{marginBottom:"10px"}}>
