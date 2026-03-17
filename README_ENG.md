@@ -13,10 +13,17 @@
 *Modern, fast, and aesthetic network security management for Linux.*
 
 [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
+[![Guide](https://img.shields.io/badge/Guide-Zero_to_Hero-brightgreen?style=for-the-badge&logo=bookstack)](INSTRUCTIONS_ENG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![System](https://img.shields.io/badge/system-AlmaLinux_|_Ubuntu_|_RHEL-red.svg)]()
 
 **Firewalld-GUI** is a professional web-based control panel for managing `firewalld` and `Fail2Ban`, specifically built for servers running **AlmaLinux 10**, **Ubuntu 24.04**, and other modern distributions. It transforms complex CLI commands into an intuitive dashboard with real-time analytics.
+
+---
+
+## 📖 Documentation (Zero to Hero)
+For those who want to quickly deploy the system and use all its features to the fullest, we've prepared a comprehensive guide:
+👉 [**Full setup and usage guide (Zero to Hero)**](INSTRUCTIONS_ENG.md)
 
 ---
 
