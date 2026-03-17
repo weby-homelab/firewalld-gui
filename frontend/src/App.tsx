@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.7")
+  const [version, setVersion] = useState("v1.5.8")
 
   useEffect(() => {
-    setVersion("v1.5.7");
+    setVersion("v1.5.8");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -105,10 +105,13 @@ function App() {
     setLoading(true)
     const res = await fetch(url, { method, headers: authHeaders, body: body ? JSON.stringify(body) : null })
     if (res.ok) {
-        await fetchData();
-        if (selectedZone && view === "config") fetchZoneDetails(selectedZone);
-        if (selectedIpset && view === "config") fetchIpsetDetails(selectedIpset);
-        if (selectedService && view === "services") fetchServiceDetails(selectedService);
+        // Small delay to let firewalld process changes before re-fetching
+        setTimeout(async () => {
+            await fetchData();
+            if (selectedZone && view === "config") fetchZoneDetails(selectedZone);
+            if (selectedIpset && view === "config") fetchIpsetDetails(selectedIpset);
+            if (selectedService && view === "services") fetchServiceDetails(selectedService);
+        }, 150);
     } else {
         const errorData = await res.json().catch(() => ({ detail: "Unknown error" }));
         alert(`Action failed: ${errorData.detail || "Server error"}`);
@@ -316,6 +319,7 @@ function App() {
                         <div style={{display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '20px', borderLeft: '1px solid var(--card-border)'}}>
                             <span style={{fontSize: '0.85em', color: 'var(--text-muted)'}}>Target</span>
                             <select 
+                                key={zoneDetails?.target || 'default'}
                                 value={zoneDetails?.target || 'default'} 
                                 onChange={(e) => apiAction(`/api/zone/${selectedZone}/target`, "POST", { target: e.target.value })}
                                 className="btn-mini"
@@ -526,6 +530,7 @@ function App() {
                                 {policyDetails?.target || 'DEFAULT'}
                             </span>
                             <select 
+                                key={policyDetails?.target || 'default'}
                                 value={policyDetails?.target || 'default'} 
                                 onChange={(e) => apiAction(`/api/policy/${selectedPolicy}/target`, "POST", { target: e.target.value })}
                                 className="btn-mini"
