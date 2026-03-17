@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.4")
+  const [version, setVersion] = useState("v1.5.5")
 
   useEffect(() => {
-    setVersion("v1.5.4");
+    setVersion("v1.5.5");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -411,15 +411,14 @@ function App() {
                   </div>
                   <div className="tag-container">
                     {zoneDetails?.ports?.map((p: string) => (
-                      <span key={p} className={`tag port ${protectedPorts.includes(p) ? 'protected' : ''}`} style={{display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px'}}>
+                      <span key={p} className={`tag port ${protectedPorts.includes(p) ? 'protected' : ''}`}>
                         {p} 
-                        {protectedPorts.includes(p) && <i className="fas fa-lock mini-lock"></i>}
+                        {protectedPorts.includes(p) && <i className="fas fa-lock mini-lock" style={{marginLeft: '5px'}}></i>}
                         {(!protectedPorts.includes(p) || migrateStep === 2) && 
-                          <i 
-                            className="fas fa-times-circle clickable" 
-                            style={{color: 'var(--danger)', opacity: 0.8}}
+                          <button 
+                            className="tag-del-btn"
                             onClick={() => { if(confirm(`Remove port ${p}?`)) apiAction("/api/zone/" + selectedZone + "/port/" + encodeURIComponent(p), "DELETE") }}
-                          ></i>
+                          >×</button>
                         }
                       </span>
                     ))}
@@ -440,20 +439,19 @@ function App() {
                   <h4>Services</h4>
                   <div className="tag-container">
                     {zoneDetails?.services?.map((s: string) => (
-                      <span key={s} className="tag service" style={{display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px'}}>
-                        <i className="fas fa-cube" style={{fontSize: '0.8rem', opacity: 0.6}}></i>
+                      <span key={s} className="tag service">
+                        <i className="fas fa-cube" style={{marginRight: '4px', opacity: 0.5}}></i>
                         {s} 
-                        <i 
-                          className="fas fa-times-circle clickable" 
-                          style={{color: 'var(--danger)', marginLeft: '5px', opacity: 0.8}}
+                        <button 
+                          className="tag-del-btn"
                           onClick={() => { if(confirm(`Remove service ${s}?`)) apiAction("/api/zone/" + selectedZone + "/service/" + encodeURIComponent(s), "DELETE") }}
-                          title="Remove service from zone"
-                        ></i>
+                          title="Remove service"
+                        >×</button>
                       </span>
                     ))}
-                    <div className="add-form" style={{marginTop: '10px'}}>
+                    <div className="add-form">
                       <input value={inputs.service} onChange={e => setInputs({ ...inputs, service: e.target.value })} placeholder="service name (e.g. smtp)" />
-                      <button onClick={() => { if(inputs.service) { apiAction("/api/zone/" + selectedZone + "/service", "POST", { service: inputs.service }); setInputs({ ...inputs, service: "" }); } }}>+ Add Service</button>
+                      <button onClick={() => { if(inputs.service) { apiAction("/api/zone/" + selectedZone + "/service", "POST", { service: inputs.service }); setInputs({ ...inputs, service: "" }); } }}>+</button>
                     </div>
                   </div>
                 </div>
