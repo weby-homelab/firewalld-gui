@@ -463,6 +463,28 @@ input:focus, select:focus {
   color: var(--danger);
 }
 
+.tag-del-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: 6px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tag-del-btn:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
 .mini-lock {
   color: var(--warning) !important;
   font-size: 0.7rem;
