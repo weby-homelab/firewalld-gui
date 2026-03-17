@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.3")
+  const [version, setVersion] = useState("v1.5.4")
 
   useEffect(() => {
-    setVersion("v1.5.3");
+    setVersion("v1.5.4");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -411,11 +411,15 @@ function App() {
                   </div>
                   <div className="tag-container">
                     {zoneDetails?.ports?.map((p: string) => (
-                      <span key={p} className={`tag port ${protectedPorts.includes(p) ? 'protected' : ''}`}>
+                      <span key={p} className={`tag port ${protectedPorts.includes(p) ? 'protected' : ''}`} style={{display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px'}}>
                         {p} 
                         {protectedPorts.includes(p) && <i className="fas fa-lock mini-lock"></i>}
                         {(!protectedPorts.includes(p) || migrateStep === 2) && 
-                          <i onClick={() => apiAction("/api/zone/" + selectedZone + "/port/" + encodeURIComponent(p), "DELETE")}>×</i>
+                          <i 
+                            className="fas fa-times-circle clickable" 
+                            style={{color: 'var(--danger)', opacity: 0.8}}
+                            onClick={() => { if(confirm(`Remove port ${p}?`)) apiAction("/api/zone/" + selectedZone + "/port/" + encodeURIComponent(p), "DELETE") }}
+                          ></i>
                         }
                       </span>
                     ))}
@@ -436,13 +440,20 @@ function App() {
                   <h4>Services</h4>
                   <div className="tag-container">
                     {zoneDetails?.services?.map((s: string) => (
-                      <span key={s} className="tag service">
-                        {s} <i onClick={() => apiAction("/api/zone/" + selectedZone + "/service/" + encodeURIComponent(s), "DELETE")}>×</i>
+                      <span key={s} className="tag service" style={{display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 12px'}}>
+                        <i className="fas fa-cube" style={{fontSize: '0.8rem', opacity: 0.6}}></i>
+                        {s} 
+                        <i 
+                          className="fas fa-times-circle clickable" 
+                          style={{color: 'var(--danger)', marginLeft: '5px', opacity: 0.8}}
+                          onClick={() => { if(confirm(`Remove service ${s}?`)) apiAction("/api/zone/" + selectedZone + "/service/" + encodeURIComponent(s), "DELETE") }}
+                          title="Remove service from zone"
+                        ></i>
                       </span>
                     ))}
-                    <div className="add-form">
-                      <input value={inputs.service} onChange={e => setInputs({ ...inputs, service: e.target.value })} placeholder="service name" />
-                      <button onClick={() => { apiAction("/api/zone/" + selectedZone + "/service", "POST", { service: inputs.service }); setInputs({ ...inputs, service: "" }) }}>+</button>
+                    <div className="add-form" style={{marginTop: '10px'}}>
+                      <input value={inputs.service} onChange={e => setInputs({ ...inputs, service: e.target.value })} placeholder="service name (e.g. smtp)" />
+                      <button onClick={() => { if(inputs.service) { apiAction("/api/zone/" + selectedZone + "/service", "POST", { service: inputs.service }); setInputs({ ...inputs, service: "" }); } }}>+ Add Service</button>
                     </div>
                   </div>
                 </div>
