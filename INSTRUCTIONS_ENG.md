@@ -1,3 +1,14 @@
+<p align="center">
+  <a href="INSTRUCTIONS_ENG.md">
+    <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
+  </a>
+  <a href="INSTRUCTIONS.md">
+    <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
+  </a>
+</p>
+
+<br>
+
 # 🛡️ Firewalld-GUI: From Zero to Hero
 *Comprehensive guide for installation, configuration, and professional use.*
 
