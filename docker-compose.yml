@@ -1,6 +1,6 @@
 services:
   backend:
-    image: webyhomelab/firewalld-gui-backend:1.5.0
+    image: webyhomelab/firewalld-gui-backend:1.5.1
     container_name: firewalld-gui-backend
     network_mode: host
     privileged: true
@@ -13,7 +13,7 @@ services:
     restart: always
 
   frontend:
-    image: webyhomelab/firewalld-gui-frontend:1.5.0
+    image: webyhomelab/firewalld-gui-frontend:1.5.1
     container_name: firewalld-gui-frontend
     network_mode: host
     restart: always

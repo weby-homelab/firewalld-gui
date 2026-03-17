@@ -225,6 +225,16 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
     masq = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--query-masquerade"]).strip()
     icmp_raw = run_cmd(["firewall-cmd", "--permanent", "--zone=" + name, "--list-icmp-blocks"])
     
+    # Collect ports from services
+    service_list = s.split()
+    service_ports = {}
+    for svc in service_list:
+        try:
+            svc_p = run_cmd(["firewall-cmd", "--permanent", "--service=" + svc, "--get-ports"])
+            if svc_p:
+                service_ports[svc] = svc_p.split()
+        except: pass
+
     # Ultra-robust parsing: split by any whitespace, filter out empty and system junk
     icmp_list = []
     if icmp_raw:
@@ -236,7 +246,8 @@ async def get_zone_details(name: str, u=Depends(get_current_user)):
     
     return {
         "ports": p.split(), 
-        "services": s.split(), 
+        "services": service_list, 
+        "service_ports": service_ports,
         "rich_rules": r.split("\n") if r else [], 
         "forward_ports": f.split("\n") if f else [],
         "interfaces": i.split(),
