@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.1")
+  const [version, setVersion] = useState("v1.5.2")
 
   useEffect(() => {
-    setVersion("v1.5.1");
+    setVersion("v1.5.2");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -741,7 +741,7 @@ function App() {
         {view === "admin" && (
           <div className="wide-pane">
             <section className="glass-card"><h2>Audit Logs</h2><div className="table-container"><table className="log-table"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
-              <tbody>{auditLogs.map((l,i)=>(<tr key={i}><td>{l.ts?.split("T")[1]?.slice(0,8)}</td><td>{l.user}</td><td><b>{l.action}</b></td><td style={{fontSize:"0.85em"}}>{l.details}</td></tr>))}
+              <tbody>{auditLogs.map((l,i)=>(<tr key={i}><td>{new Date(l.ts).toLocaleTimeString()}</td><td>{l.user}</td><td><b>{l.action}</b></td><td style={{fontSize:"0.85em"}}>{l.details}</td></tr>))}
               {auditLogs.length === 0 && <tr><td colSpan={4} className="empty">No logs</td></tr>}
               </tbody></table></div></section>
             <section className="glass-card"><h2>User Management</h2><div className="tag-container">
