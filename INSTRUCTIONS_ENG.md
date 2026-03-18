@@ -9,158 +9,140 @@
 
 <br>
 
-# 🛡️ Firewalld-GUI: From Zero to Hero
-*Comprehensive guide for installation, configuration, and professional use.*
+# 🛡️ Firewalld-GUI: Bare-Metal Installation (No Docker)
+*Detailed guide for the `classic` branch (direct host installation).*
 
 ## 📋 Table of Contents
 1. [Introduction](#1-introduction)
-2. [Quick Start (Installation)](#2-quick-start-installation)
-3. [First Launch & Onboarding](#3-first-launch--onboarding)
-4. [Dashboard: Features Overview](#4-dashboard-features-overview)
-    - [Config (Configuration)](#config-configuration)
-    - [Monitoring](#monitoring)
-    - [Snapshots (Time Machine)](#snapshots-time-machine)
-    - [Admin & Settings](#admin--settings)
-5. [Professional Tips (Pro Tips)](#5-professional-tips-pro-tips)
-6. [Troubleshooting](#6-troubleshooting)
+2. [Installation (Bare-Metal)](#2-installation-bare-metal)
+3. [First Run & Onboarding](#3-first-run--onboarding)
+4. [Dashboard Features](#4-dashboard-features)
+5. [Pro Tips](#5-pro-tips)
 
 ---
 
 ## 1. Introduction
-**Firewalld-GUI** is a modern web interface for managing `firewalld` and `Fail2Ban`. It's designed for those who want full control over server security without needing to remember hundreds of `firewall-cmd` console flags.
+This guide is for administrators who wish to install **Firewalld-GUI** directly on their system (Bare-Metal, LXC, VPS) without Docker. This method ensures maximum performance and direct access to firewall system processes.
 
 ---
 
-## 2. Quick Start (Installation)
+## 2. Installation (Bare-Metal)
 
-### System Requirements:
-- **OS:** AlmaLinux 9/10, Ubuntu 22.04/24.04.
-- **Pre-installed:** `docker`, `docker-compose`, `firewalld`, `fail2ban`.
-
-### Step 1: Create Working Directory
+### Step 1: Install System Dependencies
+For AlmaLinux 9/10:
 ```bash
-mkdir firewalld-gui && cd firewalld-gui
-mkdir -p data docker
+dnf install -y python3 python3-pip firewalld fail2ban nginx epel-release
+dnf module enable -y nodejs:20
+dnf install -y nodejs npm
 ```
 
-### Step 2: Nginx Configuration
-Create the `docker/nginx.conf` file:
+For Ubuntu 24.04:
+```bash
+apt update
+apt install -y python3 python3-pip python3-venv firewalld fail2ban nginx nodejs npm
+```
+
+Enable core services:
+```bash
+systemctl enable --now firewalld fail2ban
+```
+
+### Step 2: Download the Code
+```bash
+git clone -b classic https://github.com/weby-homelab/firewalld-gui.git /opt/firewalld-gui
+```
+
+### Step 3: Build the Frontend (React)
+```bash
+cd /opt/firewalld-gui/frontend
+npm install
+npm run build
+```
+Once complete, the optimized files will be in the `dist/` directory.
+
+### Step 4: Setup the Backend (Python)
+```bash
+cd /opt/firewalld-gui/backend
+pip3 install -r requirements.txt
+```
+*(On Ubuntu, you might need to use a venv if the system blocks global pip installs).*
+
+### Step 5: Configure Nginx
+Create the configuration file `/etc/nginx/conf.d/firewalld-gui.conf` (or in `sites-available` for Ubuntu):
 ```nginx
 server {
-    listen 8080; # Port where the dashboard will be available
+    listen 8080;
+    root /opt/firewalld-gui/frontend/dist;
+    index index.html;
+
     location / {
-        proxy_pass http://localhost:5173;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        try_files $uri $uri/ /index.html;
     }
+
     location /api {
-        proxy_pass http://localhost:8000;
+        proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
 }
 ```
 
-### Step 3: Docker Compose
-Create the `docker-compose.yml` file:
-```yaml
-services:
-  firewalld-backend:
-    image: webyhomelab/firewalld-gui-backend:latest
-    container_name: firewalld-gui-backend
-    network_mode: host
-    privileged: true
-    volumes:
-      - ./data:/app/data
-      - /etc/firewalld:/etc/firewalld
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
-      - /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock
-      - /var/log:/var/log:ro
-    restart: always
+### Step 6: Create the Systemd Service
+Create the file `/etc/systemd/system/firewalld-backend.service`:
+```ini
+[Unit]
+Description=Firewalld-GUI Backend
+After=network.target firewalld.service fail2ban.service
 
-  firewalld-frontend:
-    image: webyhomelab/firewalld-gui-frontend:latest
-    container_name: firewalld-gui-frontend
-    network_mode: host
-    restart: always
+[Service]
+WorkingDirectory=/opt/firewalld-gui/backend
+ExecStart=/usr/local/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+User=root
+Environment=PYTHONUNBUFFERED=1
 
-  firewalld-nginx:
-    image: nginx:alpine
-    container_name: firewalld-gui-nginx
-    network_mode: host
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - firewalld-backend
-      - firewalld-frontend
-    restart: always
+[Install]
+WantedBy=multi-user.target
 ```
+*(Ensure the path to `uvicorn` is correct for your system, e.g., `/usr/bin/uvicorn` or the venv path).*
 
-### Step 4: Launch
+### Step 7: Start and Open Ports
 ```bash
-docker compose up -d
+systemctl daemon-reload
+systemctl enable --now firewalld-backend nginx
+
+# Allow access to the panel port
+firewall-cmd --add-port=8080/tcp --permanent
+firewall-cmd --reload
 ```
-The dashboard will be available at `http://YOUR_SERVER_IP:8080`.
+The panel will now be available at `http://YOUR_SERVER_IP:8080`.
 
 ---
 
-## 3. First Launch & Onboarding
-Upon first opening, you'll see the **"Welcome to Firewalld-GUI"** form.
-1. Enter a username and password for your first account (Superadmin).
+## 3. First Run & Onboarding
+On your first visit, you will see the **"Welcome to Firewalld-GUI"** screen.
+1. Enter the login and password for your first account (Superadmin).
 2. Click **"Setup Admin Account"**.
-3. You will then be automatically redirected to the main dashboard.
+3. You will be automatically redirected to the main dashboard.
 
 ---
 
-## 4. Dashboard: Features Overview
+## 4. Dashboard Features
 
-### Config (Configuration)
-The main workspace.
-- **Zones:** Manage zones (public, drop, trusted). You can change the **Target** (default packet behavior: ACCEPT, REJECT, DROP).
-- **Policies:** Set up complex filtering rules between zones.
-- **Services:** 
-    - Create your own (Custom) services.
-    - Use smart search across 260+ system services.
-- **IP Sets:** Manage IP lists (e.g., whitelist or blacklist).
-- **NAT / Port Forwarding:** User-friendly interface for port forwarding.
-- **Rich Rules:** Directly add complex rules in firewalld format.
-
-### Monitoring
-- **Attack Statistics:** Chart of dropped packets over the last 24 hours.
-- **Live Drops:** List of the last 50 blocked connection attempts. Includes **Geo-IP** (country flag).
-- **Quick Ban:** One-click ban IP from logs to add it to the blacklist.
-- **Fail2Ban:** View active bans from Fail2Ban and instantly unban if needed.
-
-### Snapshots (Time Machine)
-Every change made through the panel automatically creates a snapshot of the `/etc/firewalld` configuration.
-- If you make a mistake, simply select the desired point in time and click **Restore**. The system will instantly revert to the previous settings and perform a `reload`.
-
-### Admin & Settings
-- **Audit Logs:** Who, when, and what action was performed in the panel.
-- **User Management:** Create additional administrators.
-- **Telegram Alerts:** Set up a bot to receive notifications about anomaly attack spikes or important changes.
+- **Config:** Manage Zones, Policies, Services, IP Sets, and Rich Rules.
+- **Monitoring:** Attack graphs, blocked IP list, Geo-IP integration.
+- **Snapshots:** Every configuration change creates an automatic backup of `/etc/firewalld`. You can rollback in 1 click.
+- **Admin:** User management, Audit Logs, and Telegram Alerts configuration.
 
 ---
 
-## 5. Professional Tips (Pro Tips)
-
+## 5. Pro Tips
 ### 🛡️ Safe Port Migration
-Worried about changing the SSH port and losing access?
+Afraid of changing the SSH port and locking yourself out?
 1. In the Config tab, click **"🛡️ Safe Migrate"**.
 2. Enter the new port. The system will add it alongside the existing one.
-3. Verify the connection on the new port.
-4. If everything is OK, remove the old port. The system won't let you delete protected ports (22, 80, 443, 8080) until you complete the "Workaround."
-
-### 🔎 Whois Integration
-Click on any IP in the monitoring logs to get full information about the ISP, organization, and the exact location of the attacker.
+3. Test your connection on the new port.
+4. If everything is OK, remove the old port.
 
 ---
-
-## 6. Troubleshooting
-- **"Login Failed" immediately after loading:** Check if Nginx is correctly proxying requests to `/api`. Ensure the backend container is running.
-- **Fail2Ban not working:** Ensure the `/var/run/fail2ban/fail2ban.sock` socket is correctly mounted in `docker-compose.yml`.
-- **Countries (Geo-IP) not displayed:** The backend uses a free API (ip-api.com). Check the server's internet connection.
-
----
-**✦ 2026 Weby Homelab ✦**  
-*Made with ❤️ in Kyiv under air raid sirens and blackouts.*
+**✦ 2026 Weby Homelab ✦**

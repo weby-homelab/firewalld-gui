@@ -9,47 +9,23 @@
 
 <br>
 
-# 🛡️ Firewalld-GUI (Weby Homelab)
-*Сучасне, швидке та естетичне керування мережевою безпекою Linux.*
+# 🛡️ Firewalld-GUI (Bare-Metal Edition)
+*Сучасне, швидке та естетичне керування мережевою безпекою Linux безпосередньо на вашому хості.*
 
 [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
 [![Guide](https://img.shields.io/badge/Guide-Zero_to_Hero-brightgreen?style=for-the-badge&logo=bookstack)](INSTRUCTIONS.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![System](https://img.shields.io/badge/system-AlmaLinux_|_Ubuntu_|_RHEL-red.svg)]()
 
-**Firewalld-GUI** — це професійна веб-панель для керування `firewalld` та `Fail2Ban`, створена спеціально для серверів на базі **AlmaLinux 10**, **Ubuntu 24.04** та інших сучасних дистрибутивів. Вона перетворює складні консольні команди на інтуїтивно зрозумілий дашборд із аналітикою в реальному часі.
+> **⚠️ Зверніть увагу:** Ця гілка (`classic`) містить інструкції та файли для **прямого встановлення на сервер (Bare-Metal)**. Якщо ви шукаєте версію для Docker, будь ласка, перейдіть до гілки [`main`](https://github.com/weby-homelab/firewalld-gui/tree/main).
+
+**Firewalld-GUI** — це професійна веб-панель для керування `firewalld` та `Fail2Ban`. Вона перетворює складні консольні команди на інтуїтивно зрозумілий дашборд із аналітикою в реальному часі. Ідеально підходить для LXC-контейнерів або виділених серверів, де використання Docker є небажаним або неможливим.
 
 ---
 
-## 📖 Документація (Zero to Hero)
+## 📖 Документація (Від Нуля до Героя)
 Для тих, хто хоче швидко розгорнути систему та використовувати всі її можливості на 100%, ми підготували вичерпний посібник:
 👉 [**Повна інструкція з налаштування та використання (Zero to Hero)**](INSTRUCTIONS.md)
-
----
-
-## 🏗 Архітектура системи
-
-```mermaid
-graph TD
-    User((Адміністратор)) -- HTTPS --> WebUI[Frontend: React + Vite]
-    
-    subgraph "Docker Container"
-        WebUI -- API Calls --> FastApi[Backend: FastAPI]
-        FastApi -- Execution --> Cmd[Shell: firewall-cmd]
-        FastApi -- Logging --> Logs[(SQLite Stats / Audit)]
-        FastApi -- Alerts --> TG[Telegram Bot]
-    end
-    
-    subgraph "Host OS (AlmaLinux/Ubuntu)"
-        Cmd -- Permanent Config --> FW[Firewalld Service]
-        FW -- Network Rules --> Nft[Nftables / Iptables]
-        SysLogs[/var/log/syslog/] -- Streaming --> FastApi
-    end
-    
-    style User fill:#f9f,stroke:#333,stroke-width:2px
-    style Docker fill:#f5f5f5,stroke:#6366f1,stroke-width:2px,stroke-dasharray: 5 5
-    style FW fill:#ff9900,stroke:#333,stroke-width:2px
-```
 
 ---
 
@@ -74,54 +50,26 @@ graph TD
 
 ### 🛡 Безпека та Надійність
 - **Auto-Snapshots**: Система автоматично робить бекап перед кожною зміною конфігурації.
-- **Dual-Channel Execution**: Бекенд об'єднує stdout/stderr для 100% надійності на нових Linux-ядрах.
+- **Dual-Channel Execution**: Бекенд об'єднує stdout/stderr для 100% надійності.
 - **Safe Migration**: Майстер безпечного перенесення SSH-портів.
 
 ---
 
-## 📦 Встановлення (Docker Compose)
+## 📦 Встановлення (Коротко)
 
-Для запуску повного стеку (Backend, Frontend, Nginx) використовуйте наступний `docker-compose.yml`:
+Встановлення Bare-Metal версії вимагає наявності **Python 3**, **Node.js (v18+)**, та **Nginx**.
 
-```yaml
-services:
-  firewalld-backend:
-    image: webyhomelab/firewalld-gui-backend:latest
-    container_name: firewalld-gui-backend
-    network_mode: host
-    privileged: true
-    volumes:
-      - ./data:/app/data
-      - /etc/firewalld:/etc/firewalld
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
-      - /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock
-      - /var/log:/var/log:ro
-    restart: always
-
-  firewalld-frontend:
-    image: webyhomelab/firewalld-gui-frontend:latest
-    container_name: firewalld-gui-frontend
-    network_mode: host
-    restart: always
-
-  firewalld-nginx:
-    image: nginx:alpine
-    container_name: firewalld-gui-nginx
-    network_mode: host
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - firewalld-backend
-      - firewalld-frontend
-    restart: always
-```
+1. Клонуйте репозиторій: `git clone -b classic https://github.com/weby-homelab/firewalld-gui.git /opt/firewalld-gui`
+2. Зберіть фронтенд: `cd frontend && npm install && npm run build`
+3. Налаштуйте бекенд: `cd backend && pip3 install -r requirements.txt`
+4. Налаштуйте Nginx та Systemd-сервіси (деталі у [Повній інструкції](INSTRUCTIONS.md)).
 
 ---
 
 ## 📋 Системні вимоги
 - **ОС:** AlmaLinux 9/10, Ubuntu 22.04/24.04, RHEL 9+.
-- **Залежності:** `firewalld`, `fail2ban`, `docker`.
-- **Доступ:** Права `root` (або `privileged` в Docker) для прямої взаємодії з ядром.
+- **Залежності:** `python3`, `nodejs`, `npm`, `nginx`, `firewalld`, `fail2ban`.
+- **Доступ:** Права `root` (або `sudo`) для керування системними службами.
 
 ---
 <p align="center">
