@@ -9,47 +9,23 @@
 
 <br>
 
-# 🛡️ Firewalld-GUI (Weby Homelab)
-*Modern, fast, and aesthetic network security management for Linux.*
+# 🛡️ Firewalld-GUI (Bare-Metal Edition)
+*Modern, fast, and aesthetic network security management directly on your host.*
 
 [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
 [![Guide](https://img.shields.io/badge/Guide-Zero_to_Hero-brightgreen?style=for-the-badge&logo=bookstack)](INSTRUCTIONS_ENG.md)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![System](https://img.shields.io/badge/system-AlmaLinux_|_Ubuntu_|_RHEL-red.svg)]()
 
-**Firewalld-GUI** is a professional web-based control panel for managing `firewalld` and `Fail2Ban`, specifically built for servers running **AlmaLinux 10**, **Ubuntu 24.04**, and other modern distributions. It transforms complex CLI commands into an intuitive dashboard with real-time analytics.
+> **⚠️ Notice:** This branch (`classic`) contains instructions and source code for **direct bare-metal installation**. If you are looking for the Docker version, please switch to the [`main` branch](https://github.com/weby-homelab/firewalld-gui/tree/main).
+
+**Firewalld-GUI** is a professional web panel for managing `firewalld` and `Fail2Ban`. It transforms complex console commands into an intuitive dashboard with real-time analytics. Perfect for LXC containers or dedicated servers where Docker is restricted or unnecessary.
 
 ---
 
 ## 📖 Documentation (Zero to Hero)
-For those who want to quickly deploy the system and use all its features to the fullest, we've prepared a comprehensive guide:
-👉 [**Full setup and usage guide (Zero to Hero)**](INSTRUCTIONS_ENG.md)
-
----
-
-## 🏗 System Architecture
-
-```mermaid
-graph TD
-    User((Administrator)) -- HTTPS --> WebUI[Frontend: React + Vite]
-    
-    subgraph "Docker Container"
-        WebUI -- API Calls --> FastApi[Backend: FastAPI]
-        FastApi -- Execution --> Cmd[Shell: firewall-cmd]
-        FastApi -- Logging --> Logs[(SQLite Stats / Audit)]
-        FastApi -- Alerts --> TG[Telegram Bot]
-    end
-    
-    subgraph "Host OS (AlmaLinux/Ubuntu)"
-        Cmd -- Permanent Config --> FW[Firewalld Service]
-        FW -- Network Rules --> Nft[Nftables / Iptables]
-        SysLogs[/var/log/syslog/] -- Streaming --> FastApi
-    end
-    
-    style User fill:#f9f,stroke:#333,stroke-width:2px
-    style Docker fill:#f5f5f5,stroke:#6366f1,stroke-width:2px,stroke-dasharray: 5 5
-    style FW fill:#ff9900,stroke:#333,stroke-width:2px
-```
+For those who want to quickly deploy the system and use all its features to 100%, we have prepared a comprehensive guide:
+👉 [**Full Setup and Usage Guide (Zero to Hero)**](INSTRUCTIONS_ENG.md)
 
 ---
 
@@ -58,70 +34,42 @@ graph TD
 ### 🛠 Service Management (Service Architect)
 - **Custom Services**: Create your own service definitions by grouping ports and protocols.
 - **Informative Cards**: View service contents (ports) directly in the list without extra clicks.
-- **Smart Search**: Instantly filter through 260+ system service definitions.
+- **Smart Search**: Instant filtering among 260+ system definitions.
 - **Collapsible UI**: System services are collapsed by default for visual clarity.
 
 ### 🧱 Object Lifecycle
-- **Zones & Policies**: Create, edit, and delete firewall objects via browser.
+- **Zones & Policies**: Create, edit, and delete firewall objects via the browser.
 - **Global Config**: Full access to `firewalld.conf` (Default Zone, Log Denied).
 - **Target Actions**: Configure default behavior (ACCEPT, REJECT, DROP) for any zone.
 
 ### 🔍 Threat Intelligence & Analytics
-- **Geo-IP Integration**: Track the origin country of every attack in real-time.
-- **Anomaly Detection**: Automatic Telegram alerts for traffic spikes.
+- **Geo-IP Integration**: Track the origin country of every attack in real time.
+- **Anomaly Detection**: Automatic Telegram alerts upon detecting attack spikes.
 - **Fail2Ban Control**: Full control over active bans and jail status.
-- **Visual Analytics**: Real-time activity charts for dropped packets.
+- **Visual Analytics**: Real-time graphs of dropped packet activity.
 
-### 🛡 Safety & Reliability
-- **Auto-Snapshots**: System automatically backs up configuration before any change.
-- **Dual-Channel Execution**: Backend merges stdout/stderr for 100% reliability on new Linux kernels.
-- **Safe Migration**: Guided wizard for secure SSH port migration.
+### 🛡 Security & Reliability
+- **Auto-Snapshots**: Automatically backs up the config before every change.
+- **Dual-Channel Execution**: Backend merges stdout/stderr for 100% reliability.
+- **Safe Migration**: Safe SSH port migration wizard.
 
 ---
 
-## 📦 Installation (Docker Compose)
+## 📦 Installation (Brief)
 
-To run the full stack (Backend, Frontend, Nginx), use the following `docker-compose.yml`:
+The Bare-Metal version requires **Python 3**, **Node.js (v18+)**, and **Nginx**.
 
-```yaml
-services:
-  firewalld-backend:
-    image: webyhomelab/firewalld-gui-backend:latest
-    container_name: firewalld-gui-backend
-    network_mode: host
-    privileged: true
-    volumes:
-      - ./data:/app/data
-      - /etc/firewalld:/etc/firewalld
-      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
-      - /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock
-      - /var/log:/var/log:ro
-    restart: always
-
-  firewalld-frontend:
-    image: webyhomelab/firewalld-gui-frontend:latest
-    container_name: firewalld-gui-frontend
-    network_mode: host
-    restart: always
-
-  firewalld-nginx:
-    image: nginx:alpine
-    container_name: firewalld-gui-nginx
-    network_mode: host
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - firewalld-backend
-      - firewalld-frontend
-    restart: always
-```
+1. Clone the repository: `git clone -b classic https://github.com/weby-homelab/firewalld-gui.git /opt/firewalld-gui`
+2. Build the frontend: `cd frontend && npm install && npm run build`
+3. Setup the backend: `cd backend && pip3 install -r requirements.txt`
+4. Configure Nginx and Systemd services (details in the [Full Guide](INSTRUCTIONS_ENG.md)).
 
 ---
 
 ## 📋 System Requirements
 - **OS:** AlmaLinux 9/10, Ubuntu 22.04/24.04, RHEL 9+.
-- **Dependencies:** `firewalld`, `fail2ban`, `docker`.
-- **Access:** `root` privileges (or `privileged` in Docker) for kernel interaction.
+- **Dependencies:** `python3`, `nodejs`, `npm`, `nginx`, `firewalld`, `fail2ban`.
+- **Permissions:** `root` (or `sudo`) access to manage system services.
 
 ---
 <p align="center">
