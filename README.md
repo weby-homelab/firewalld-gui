@@ -19,6 +19,9 @@
 
 **Firewalld-GUI** — це професійна веб-панель для керування `firewalld` та `Fail2Ban`, створена спеціально для серверів на базі **AlmaLinux 10**, **Ubuntu 24.04** та інших сучасних дистрибутивів. Вона перетворює складні консольні команди на інтуїтивно зрозумілий дашборд із аналітикою в реальному часі.
 
+![Dashboard Screenshot 1](firewalld-gui-1.png)
+![Dashboard Screenshot 2](firewalld-gui-2.png)
+
 ---
 
 ## 📖 Документація (Zero to Hero)
