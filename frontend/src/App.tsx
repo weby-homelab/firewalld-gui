@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import "./App.css"
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
   const [monitorView, setMonitorView] = useState("drops")
   const [status, setStatus] = useState<any>(null)
   const [zones, setZones] = useState<string[]>([])
-  const [selectedZone, setSelectedZone] = useState<string>("public")
+  const [selectedZone, setSelectedZone] = useState<string | null>("public")
   const [zoneDetails, setZoneDetails] = useState<any>(null)
   const [ipsets, setIpsets] = useState<string[]>([])
   const [selectedIpset, setSelectedIpset] = useState<string | null>(null)
@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.5.8")
+  const [version, setVersion] = useState("v1.6.0")
 
   useEffect(() => {
-    setVersion("v1.5.8");
+    setVersion("v1.6.0");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -806,7 +806,7 @@ function App() {
           </div>
         )}
       </main>
-      <footer className="footer">© 2026 Weby Homelab • Running on AlmaLinux 10</footer>
+      <footer className="footer">© 2026 Weby Homelab • Firewalld-GUI v1.6.0 (AlmaLinux/Ubuntu)</footer>
     </div>
   )
 }
