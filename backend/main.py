@@ -8,7 +8,9 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta
 import subprocess, json, os, re, requests, shutil, sqlite3
 
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-firewalld-gui-key-2026")
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
@@ -32,10 +34,13 @@ if os.path.exists("/app/static"):
     async def serve_frontend(full_path: str):
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404)
-        file_path = os.path.join("/app/static", full_path)
+        base_dir = os.path.abspath("/app/static")
+        file_path = os.path.abspath(os.path.join(base_dir, full_path))
+        if not file_path.startswith(base_dir):
+            raise HTTPException(status_code=403, detail="Access Denied")
         if os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse("/app/static/index.html")
+        return FileResponse(os.path.join(base_dir, "index.html"))
 
 def init_db():
     os.makedirs(DATA_DIR, exist_ok=True)
