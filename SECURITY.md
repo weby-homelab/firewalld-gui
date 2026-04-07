@@ -13,7 +13,7 @@ This project provides administrative access to system firewalls and requires hig
 ## Reporting a Vulnerability
 
 If you find a security bug (e.g., Path Traversal, Auth Bypass):
-- **Email:** [REDACTED_EMAIL]
+- **Email:** contact@srvrs.top
 - **Telegram:** [REDACTED_TG]
 
 ---
