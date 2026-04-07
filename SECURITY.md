@@ -13,8 +13,8 @@ This project provides administrative access to system firewalls and requires hig
 ## Reporting a Vulnerability
 
 If you find a security bug (e.g., Path Traversal, Auth Bypass):
-- **Email:** rekvizitor.ua@gmail.com
-- **Telegram:** @rekvizitor_ua
+- **Email:** [REDACTED_EMAIL]
+- **Telegram:** [REDACTED_TG]
 
 ---
 
