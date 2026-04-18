@@ -75,6 +75,7 @@ services:
 
 ---
 
-## 🤝 Підтримка та Розробка
-
-Розроблено з ❤️ командою **Weby Homelab**.
+<p align="center">
+  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
+  <strong>© 2026 Weby Homelab</strong>
+</p>
