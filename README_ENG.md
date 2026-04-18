@@ -78,6 +78,7 @@ The project is built as an **All-in-One Docker Image**:
 
 ---
 
-## 🤝 Support & Development
-
-Developed with ❤️ by the **Weby Homelab** team.
+<p align="center">
+  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
+  <strong>© 2026 Weby Homelab</strong>
+</p>
