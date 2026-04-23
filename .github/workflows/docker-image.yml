@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*.*.*'    # Trigger only when a version tag is pushed (e.g., v1.0.1)
 
+permissions:
+  contents: read
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
