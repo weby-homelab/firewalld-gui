@@ -72,7 +72,9 @@ The Bare-Metal version requires **Python 3**, **Node.js (v18+)**, and **Nginx**.
 - **Permissions:** `root` (or `sudo`) access to manage system services.
 
 ---
+
+<br>
 <p align="center">
-  Made with ❤️ in Kyiv under air raid sirens and blackouts<br>
-  <strong>✦ 2026 Weby Homelab ✦</strong>
+  Built in Ukraine under air raid sirens &amp; blackouts ⚡<br>
+  &copy; 2026 Weby Homelab
 </p>
