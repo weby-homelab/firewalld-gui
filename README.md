@@ -7,6 +7,12 @@
 
 ---
 
+<p align="center">
+  <img src="frontend/src/assets/hero.png" alt="Firewalld-GUI Dashboard" width="800">
+</p>
+
+---
+
 ## 🐳 Швидкий запуск (Docker)
 
 Найпростіший спосіб запустити **Firewalld-GUI** — використовувати офіційний Docker-образ:
