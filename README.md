@@ -9,7 +9,7 @@
 
 <br>
 
-# 🛡️ Firewalld-GUI (Weby Homelab)
+# 🛡️ Firewalld-GUI (Docker edition)
 
 [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
 [![License](https://img.shields.io/github/license/weby-homelab/firewalld-gui)](LICENSE)
