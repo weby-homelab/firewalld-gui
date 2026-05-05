@@ -8,7 +8,9 @@
 ---
 
 <p align="center">
-  <img src="frontend/src/assets/hero.png" alt="Firewalld-GUI Dashboard" width="800">
+  <img src="firewalld-gui-1.png" alt="Firewalld-GUI Interface 1" width="800">
+  <br><br>
+  <img src="firewalld-gui-2.png" alt="Firewalld-GUI Interface 2" width="800">
 </p>
 
 ---
