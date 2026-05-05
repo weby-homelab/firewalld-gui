@@ -23,6 +23,12 @@
 
 ---
 
+<p align="center">
+  <img src="frontend/src/assets/hero.png" alt="Firewalld-GUI Dashboard" width="800">
+</p>
+
+---
+
 ## 📖 Documentation (Zero to Hero)
 For those who want to quickly deploy the system and use all its features to 100%, we have prepared a comprehensive guide:
 👉 [**Full Setup and Usage Guide (Zero to Hero)**](INSTRUCTIONS_ENG.md)
