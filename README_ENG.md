@@ -19,6 +19,12 @@
 
 ---
 
+<p align="center">
+  <img src="frontend/src/assets/hero.png" alt="Firewalld-GUI Dashboard" width="800">
+</p>
+
+---
+
 ## 🐳 Quick Start (Docker)
 
 The fastest way to run **Firewalld-GUI** is using the official Docker image:
