@@ -70,29 +70,31 @@ def save_users(users):
     with open(USER_DATA_FILE, "w") as f: json.dump(users, f)
 
 
-def sanitize_arg(arg):
-    match = re.match(r'^[\w\-\.\=\+:/, @]+$', str(arg))
-    if not match:
-        raise ValueError("Invalid argument format")
-    return match.group(0)
-
 def run_cmd(cmd):
     if not cmd:
         raise ValueError("Empty command")
     
     exec_name = str(cmd[0])
-    sanitized_args = [sanitize_arg(c) for c in cmd[1:]]
+    run_args = []
+    
+    if exec_name == "firewall-cmd":
+        run_args.append("firewall-cmd")
+    elif exec_name == "fail2ban-client":
+        run_args.append("fail2ban-client")
+    elif exec_name == "tail":
+        run_args.append("tail")
+    else:
+        raise ValueError("Unauthorized executable")
+        
+    for c in cmd[1:]:
+        match = re.match(r'^[\w\-\.\=\+:/, @]+$', str(c))
+        if match:
+            run_args.append(match.group(0))
+        else:
+            raise ValueError("Invalid argument format")
 
     try:
-        if exec_name == "firewall-cmd":
-            result = subprocess.run(["firewall-cmd"] + sanitized_args, capture_output=True, text=True, check=True)
-        elif exec_name == "fail2ban-client":
-            result = subprocess.run(["fail2ban-client"] + sanitized_args, capture_output=True, text=True, check=True)
-        elif exec_name == "tail":
-            result = subprocess.run(["tail"] + sanitized_args, capture_output=True, text=True, check=True)
-        else:
-            raise ValueError("Unauthorized executable")
-            
+        result = subprocess.run(run_args, capture_output=True, text=True, check=True)
         out = result.stdout.strip()
         if not out and result.stderr:
             out = result.stderr.strip()
@@ -556,21 +558,20 @@ async def get_snaps(u=Depends(get_current_user)):
 
 @app.post("/api/snapshots/restore/{n}")
 async def restore_sn(n: str, u=Depends(get_current_user)):
-    # Secure filename check
-    if not n or ".." in n or "/" in n or "\\" in n: 
+    if not n:
         raise HTTPException(status_code=400, detail="Invalid snapshot name")
-    
-    snap_path = os.path.join(SNAPSHOTS_DIR, n)
-    # Ensure the resolved path is actually inside SNAPSHOTS_DIR
-    if not os.path.abspath(snap_path).startswith(os.path.abspath(SNAPSHOTS_DIR)):
-        raise HTTPException(status_code=400, detail="Path traversal attempt detected")
         
+    safe_n = os.path.basename(n)
+    if safe_n != n or safe_n in ("", ".", ".."):
+        raise HTTPException(status_code=400, detail="Invalid snapshot name")
+        
+    snap_path = os.path.join(SNAPSHOTS_DIR, safe_n)
     if not os.path.exists(snap_path): 
         raise HTTPException(status_code=404, detail="Snapshot not found")
         
     shutil.copytree(snap_path, "/etc/firewalld", dirs_exist_ok=True)
     run_cmd(["firewall-cmd", "--reload"])
-    log_action(u["username"], "RESTORE", n)
+    log_action(u["username"], "RESTORE", safe_n)
     return {"status": "success"}
 
 if os.path.exists("/app/static"):
