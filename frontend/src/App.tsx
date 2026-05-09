@@ -24,10 +24,10 @@ function App() {
   const [whois, setWhois] = useState<any>(null)
   const [tgConfig, setTgConfig] = useState({ tg_token: "", tg_chat_id: "" })
   const [loading, setLoading] = useState(false)
-  const [version, setVersion] = useState("v1.6.0")
+  const [version, setVersion] = useState("v1.6.5")
 
   useEffect(() => {
-    setVersion("v1.6.0");
+    setVersion("v1.6.5");
   }, []);
   const [inputs, setInputs] = useState({ port: "", service: "", rule: "", ipset: "", ipentry: "", forward: "", user: "", pass: "", icmp: "", interface: "", source: "", new_zone: "", new_policy: "", new_service: "" })
   const [setupNeeded, setSetupNeeded] = useState<boolean | null>(null)
@@ -806,7 +806,7 @@ function App() {
           </div>
         )}
       </main>
-      <footer className="footer">© 2026 Weby Homelab • Firewalld-GUI v1.6.0 (AlmaLinux/Ubuntu)</footer>
+      <footer className="footer">© 2026 Weby Homelab • Firewalld-GUI v1.6.5 (AlmaLinux/Ubuntu)</footer>
     </div>
   )
 }
