@@ -21,7 +21,7 @@ CONFIG_FILE = f"{DATA_DIR}/config.json"
 SNAPSHOTS_DIR = f"{DATA_DIR}/snapshots"
 DB_FILE = f"{DATA_DIR}/stats.db"
 
-app = FastAPI(title="Firewalld-GUI API", version="1.6.3")
+app = FastAPI(title="Firewalld-GUI API", version="1.6.4")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"],)
 
 # Serve Frontend Static Files
