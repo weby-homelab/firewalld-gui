@@ -70,20 +70,40 @@ def save_users(users):
     with open(USER_DATA_FILE, "w") as f: json.dump(users, f)
 
 
+def sanitize_arg(arg):
+    match = re.match(r'^[\w\-\.\=\+:/, @]+$', str(arg))
+    if not match:
+        raise ValueError("Invalid argument format")
+    return match.group(0)
+
 def run_cmd(cmd):
+    if not cmd:
+        raise ValueError("Empty command")
+    
+    exec_name = str(cmd[0])
+    sanitized_args = [sanitize_arg(c) for c in cmd[1:]]
+
     try:
-        # Capture both stdout and stderr to handle all firewall-cmd outputs
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        if exec_name == "firewall-cmd":
+            result = subprocess.run(["firewall-cmd"] + sanitized_args, capture_output=True, text=True, check=True)
+        elif exec_name == "fail2ban-client":
+            result = subprocess.run(["fail2ban-client"] + sanitized_args, capture_output=True, text=True, check=True)
+        elif exec_name == "tail":
+            result = subprocess.run(["tail"] + sanitized_args, capture_output=True, text=True, check=True)
+        else:
+            raise ValueError("Unauthorized executable")
+            
         out = result.stdout.strip()
         if not out and result.stderr:
             out = result.stderr.strip()
         return out
     except subprocess.CalledProcessError as e:
-        err = e.stderr.strip() or e.stdout.strip() or str(e)
-        if "already" in err.lower(): return f"Success: {err}" # Handle 'already' cases gracefully
-        raise HTTPException(status_code=400, detail=err)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        err = e.stderr.strip() or e.stdout.strip() or "Command failed"
+        if "already" in err.lower(): return "Success: already processed"
+        safe_err = re.sub(r'[^a-zA-Z0-9 _\-.]', '', err[:100])
+        raise HTTPException(status_code=400, detail=f"Operation failed: {safe_err}")
+    except Exception:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.get("/api/auth/setup-needed")
 async def is_setup_needed(): return {"setup_needed": len(load_users()) == 0}
@@ -214,7 +234,7 @@ async def create_service(name: str = Body(..., embed=True), u=Depends(get_curren
         return {"result": res}
     except Exception as e:
         if isinstance(e, HTTPException): raise e
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @app.delete("/api/service/{name}")
 async def delete_service(name: str, u=Depends(get_current_user)):
@@ -359,8 +379,8 @@ async def get_fw_logs(u=Depends(get_current_user)):
 
         if not target_log: return {"logs": []}
 
-        cmd = ["tail", "-n", "500", target_log]
-        lines = subprocess.check_output(cmd, text=True).splitlines()
+        out = run_cmd(["tail", "-n", "500", target_log])
+        lines = out.splitlines()
 
         parsed = []; conn = sqlite3.connect(DB_FILE)
         recent_ips = {}
@@ -399,8 +419,8 @@ async def get_fw_logs(u=Depends(get_current_user)):
                     conn.execute("INSERT OR IGNORE INTO drops (ts, src, proto, port) VALUES (?, ?, ?, ?)", 
                                 (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), item["src"], item["proto"], item["port"]))
         conn.commit(); conn.close(); return {"logs": parsed[::-1][:50]}
-    except Exception as e: 
-        print(f"Log Error: {e}")
+    except Exception: 
+        print("Log Error occurred")
         return {"logs": []}
 @app.get("/api/stats")
 async def get_stats(u=Depends(get_current_user)):
@@ -435,8 +455,8 @@ async def get_stats(u=Depends(get_current_user)):
             })
             
         return {"hourly": full_stats}
-    except Exception as e:
-        print(f"Stats Error: {e}")
+    except Exception:
+        print("Stats Error occurred")
         return {"hourly": []}
 
 @app.get("/api/policies/all")
@@ -558,8 +578,14 @@ if os.path.exists("/app/static"):
     async def serve_frontend(full_path: str):
         if full_path.startswith("api/"):
             raise HTTPException(status_code=404)
+            
+        match = re.match(r'^([a-zA-Z0-9_\-\./]*)$', full_path)
+        if not match or ".." in full_path:
+            raise HTTPException(status_code=403, detail="Invalid path")
+        safe_path = match.group(1)
+
         base_dir = os.path.abspath("/app/static")
-        file_path = os.path.abspath(os.path.join(base_dir, full_path))
+        file_path = os.path.abspath(os.path.join(base_dir, safe_path))
         if not file_path.startswith(base_dir):
             raise HTTPException(status_code=403, detail="Access Denied")
         if os.path.isfile(file_path):
