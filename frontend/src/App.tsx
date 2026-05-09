@@ -192,8 +192,7 @@ function App() {
       <header className="glass-card header">
         <div className="brand">
           <h1>Firewalld-GUI</h1>
-          <span className="badge">{version}</span>
-          {status?.firewalld_state && (
+          <span className="badge">v{__APP_VERSION__}</span>          {status?.firewalld_state && (
             <span className={`status-pill ${status.firewalld_state === 'running' ? 'online' : 'offline'}`} style={{marginLeft: '10px'}}>
               <i className={`fas fa-circle`} style={{fontSize: '0.6rem', marginRight: '5px'}}></i>
               {status.firewalld_state}
