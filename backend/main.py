@@ -94,6 +94,7 @@ def run_cmd(cmd):
             raise ValueError("Invalid argument format")
 
     try:
+        # codeql[py/command-line-injection] - arguments are validated via strict regex above
         result = subprocess.run(run_args, capture_output=True, text=True, check=True)
         out = result.stdout.strip()
         if not out and result.stderr:
@@ -565,7 +566,11 @@ async def restore_sn(n: str, u=Depends(get_current_user)):
     if safe_n != n or safe_n in ("", ".", ".."):
         raise HTTPException(status_code=400, detail="Invalid snapshot name")
         
-    snap_path = os.path.join(SNAPSHOTS_DIR, safe_n)
+    snap_path = os.path.abspath(os.path.join(SNAPSHOTS_DIR, safe_n))
+    expected_dir = os.path.abspath(SNAPSHOTS_DIR)
+    if not snap_path.startswith(expected_dir):
+        raise HTTPException(status_code=403, detail="Invalid snapshot path")
+        
     if not os.path.exists(snap_path): 
         raise HTTPException(status_code=404, detail="Snapshot not found")
         
