@@ -38,7 +38,8 @@ body {
    Layout & Containers
 ----------------------------------- */
 .container-fluid {
-  max-width: 1400px;
+  width: 100%;
+  max-width: 1800px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -602,6 +603,8 @@ input:focus, select:focus {
 .sub-nav-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 
 .table-container {
+  width: 100%;
+  max-width: 100vw;
   overflow-x: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--card-border);
@@ -713,8 +716,8 @@ input:focus, select:focus {
   }
   
   .side-pane {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -722,12 +725,14 @@ input:focus, select:focus {
   .header {
     flex-direction: column;
     align-items: flex-start;
+    gap: 15px;
   }
   
   .header-actions {
     width: 100%;
     justify-content: space-between;
     flex-wrap: wrap;
+    gap: 10px;
   }
   
   .add-nat-form .input-group {
