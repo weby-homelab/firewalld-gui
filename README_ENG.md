@@ -62,7 +62,7 @@ services:
     restart: always
 ```
 
-The panel will be available on port **8080**.
+The panel will be available on port **8649**.
 
 ---
 
