@@ -1,20 +1,21 @@
 <p align="center">
-  <a href="README_ENG.md">
+  <a href="README.md">
     <img src="https://img.shields.io/badge/🇬🇧_English-00D4FF?style=for-the-badge&logo=readme&logoColor=white" alt="English README">
   </a>
-  <a href="README.md">
+  <a href="README_UA.md">
     <img src="https://img.shields.io/badge/🇺🇦_Українська-FF4D00?style=for-the-badge&logo=readme&logoColor=white" alt="Українська версія">
   </a>
 </p>
 
 <br>
 
-# 🛡️ Firewalld-GUI (Docker edition)
+# 🛡️ Firewalld-GUI (Weby Homelab)
+*Modern, fast, and aesthetic network security management for Linux.*
 
 [![Latest Release](https://img.shields.io/github/v/release/weby-homelab/firewalld-gui)](https://github.com/weby-homelab/firewalld-gui/releases/latest)
 [![License](https://img.shields.io/github/license/weby-homelab/firewalld-gui)](LICENSE)
 
-**Firewalld-GUI** — це потужна та сучасна веб-панель для управління `firewalld`. Проєкт створений для системних адміністраторів, які хочуть мати повний візуальний контроль над безпекою сервера без необхідності пам'ятати сотні команд `firewall-cmd`.
+**Firewalld-GUI** is a professional web-based control panel for managing `firewalld` and `Fail2Ban`. It transforms complex CLI commands into an intuitive dashboard with real-time analytics.
 
 ---
 
@@ -26,9 +27,9 @@
 
 ---
 
-## 🐳 Швидкий запуск (Docker)
+## 🐳 Quick Start (Docker)
 
-Найпростіший спосіб запустити **Firewalld-GUI** — використовувати офіційний Docker-образ:
+The fastest way to run **Firewalld-GUI** is using the official Docker image:
 
 ```bash
 docker run -d \
@@ -43,7 +44,7 @@ docker run -d \
   webyhomelab/firewalld-gui:latest
 ```
 
-Або через **docker-compose.yml**:
+Or via **docker-compose.yml**:
 
 ```yaml
 services:
@@ -61,36 +62,27 @@ services:
     restart: always
 ```
 
-Панель буде доступна на порті **8649**.
+The panel will be available on port **8649**.
 
 ---
 
-## 🚀 Основні можливості
+## 🚀 Key Features
 
-### 🛠 Керування сервісами
-- **Custom Services**: Створюйте власні сервіси, групуючи порти та протоколи.
-- **Інформативні картки**: Переглядайте порти прямо у списку.
-- **Розумний пошук**: Миттєва фільтрація серед 260+ системних дефініцій.
-
-### 🧱 Життєвий цикл об'єктів
-- **Зони та Політики**: Повний цикл управління (створення/редагування/видалення).
-- **Global Config**: Доступ до `firewalld.conf` (Default Zone, Log Denied).
-- **Target Actions**: Налаштування поведінки (ACCEPT, REJECT, DROP).
-
-### 🔍 Threat Intelligence
-- **Geo-IP Integration**: Відстежуйте країну кожної атаки.
-- **Anomaly Detection**: Сповіщення в Telegram при сплесках атак.
-- **Fail2Ban Control**: Управління банами та статусом джейлів.
+*   **Service Architect:** Create custom service definitions by grouping ports and protocols.
+*   **Object Lifecycle:** Manage Zones, Policies, and IPsets via a modern UI.
+*   **Threat Intelligence:** Geo-IP integration to track attack origins in real-time.
+*   **Anomaly Detection:** Automatic Telegram alerts for traffic spikes.
+*   **Safety First:** Automatic snapshots created before every configuration change.
 
 ---
 
-## 🏗️ Архітектура рішення
+## 🏗️ Architecture
 
-Проєкт побудований як **All-in-One Docker Image**:
+The project is built as an **All-in-One Docker Image**:
 
-1.  **Frontend (React):** Швидкий SPA-інтерфейс, вбудований у бекенд.
-2.  **Backend (FastAPI):** Асинхронний API, який обслуговує запити та роздає статику.
-3.  **OS Integration:** Пряма взаємодія з `firewalld` через DBus.
+1.  **Frontend (React):** Responsive SPA interface built and embedded into the backend.
+2.  **Backend (FastAPI):** Asynchronous API serving requests and static frontend files.
+3.  **OS Integration:** Direct interaction with `firewalld` via DBus.
 
 ---
 
