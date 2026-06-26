@@ -30,7 +30,7 @@
   </a>
 </p>
 
-# 🛡️ Firewalld-GUI (Weby Homelab)
+# 🛡️ Firewalld-GUI (Docker edition)
 *Modern, fast, and aesthetic network security management for Linux systems.*
 
 **Firewalld-GUI** is a professional, web-based control panel designed specifically for managing `firewalld` and `Fail2Ban` security systems. Built with modern technologies, it translates complex command-line actions into an intuitive, rich dashboard with real-time logging, traffic analysis, and proactive threat alerts. 
