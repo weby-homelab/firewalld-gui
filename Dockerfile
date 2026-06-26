@@ -26,10 +26,11 @@ COPY backend/ .
 # Copy built frontend to backend static directory
 COPY --from=frontend-builder /app/frontend/dist /app/static
 
-EXPOSE 8080
+EXPOSE 8649
 
 ENV TZ=Europe/Kyiv
 ENV DATA_DIR=/app/data
 
 # Run FastAPI
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8649"]
+

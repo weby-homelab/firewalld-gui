@@ -47,7 +47,7 @@ mkdir -p data docker
 Create the `docker/nginx.conf` file:
 ```nginx
 server {
-    listen 8080; # Port where the dashboard will be available
+    listen 8649; # Port where the dashboard will be available
     location / {
         proxy_pass http://localhost:5173;
         proxy_set_header Host $host;
@@ -100,7 +100,7 @@ services:
 ```bash
 docker compose up -d
 ```
-The dashboard will be available at `http://YOUR_SERVER_IP:8080`.
+The dashboard will be available at `http://YOUR_SERVER_IP:8649`.
 
 ---
 
@@ -149,7 +149,7 @@ Worried about changing the SSH port and losing access?
 1. In the Config tab, click **"🛡️ Safe Migrate"**.
 2. Enter the new port. The system will add it alongside the existing one.
 3. Verify the connection on the new port.
-4. If everything is OK, remove the old port. The system won't let you delete protected ports (22, 80, 443, 8080) until you complete the "Workaround."
+4. If everything is OK, remove the old port. The system won't let you delete protected ports (22, 80, 443, 8080, 8649) until you complete the "Workaround."
 
 ### 🔎 Whois Integration
 Click on any IP in the monitoring logs to get full information about the ISP, organization, and the exact location of the attacker.

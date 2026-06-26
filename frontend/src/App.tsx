@@ -40,7 +40,7 @@ function App() {
   const [globalConfig, setGlobalConfig] = useState<any>(null)
 
   const authHeaders = { "Authorization": "Bearer " + token, "Content-Type": "application/json" }
-  const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp", "8080/tcp", "3100/tcp"]
+  const protectedPorts = ["55222/tcp", "22/tcp", "80/tcp", "443/tcp", "8080/tcp", "8649/tcp", "3100/tcp"]
 
   const logout = () => { localStorage.removeItem("fm_token"); setToken(null); setUser(null) }
 
@@ -688,7 +688,7 @@ function App() {
                       </div>
                       
                       <div className="add-form" style={{marginTop: '20px'}}>
-                        <input value={inputs.port} onChange={e=>setInputs({...inputs,port:e.target.value})} placeholder="e.g. 8080/tcp" />
+                        <input value={inputs.port} onChange={e=>setInputs({...inputs,port:e.target.value})} placeholder="e.g. 8649/tcp" />
                         <button onClick={() => { if(inputs.port) { apiAction(`/api/service/${selectedService}/port`, "POST", { port: inputs.port }); setInputs({ ...inputs, port: "" }); } }}>+</button>
                       </div>
                     </div>
