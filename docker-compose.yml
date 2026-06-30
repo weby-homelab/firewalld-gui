@@ -1,27 +1,38 @@
 services:
   backend:
-    image: webyhomelab/firewalld-gui-backend:1.5.8
+    image: webyhomelab/firewalld-gui-backend:1.6.13
     container_name: firewalld-gui-backend
     network_mode: host
-    privileged: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     volumes:
       - ./backend/data:/app/data
       - /etc/firewalld:/etc/firewalld
       - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
       - /var/run/fail2ban/fail2ban.sock:/var/run/fail2ban/fail2ban.sock
       - /var/log:/var/log:ro
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     restart: always
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
 
   frontend:
-    image: webyhomelab/firewalld-gui-frontend:1.5.8
+    image: webyhomelab/firewalld-gui-frontend:1.6.13
     container_name: firewalld-gui-frontend
     network_mode: host
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/timezone:/etc/timezone:ro
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5173/"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
 
   nginx:
     image: nginx:alpine
@@ -32,6 +43,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     restart: always
