@@ -1,0 +1,10 @@
+.git/
+node_modules/
+__pycache__/
+*.db
+*.key
+*.log
+dist/
+build/
+result-*.json
+data/

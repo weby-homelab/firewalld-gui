@@ -14,7 +14,6 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     firewalld \
     fail2ban \
-    systemd \
     iputils-ping \
     && rm -rf /var/lib/apt/lists/*
 
@@ -28,9 +27,19 @@ COPY --from=frontend-builder /app/frontend/dist /app/static
 
 EXPOSE 8649
 
+ENV PORT=8649
 ENV TZ=Europe/Kyiv
 ENV DATA_DIR=/app/data
 
+# Create non-root user for runtime
+RUN groupadd -r appuser && useradd -r -g appuser -d /app -s /sbin/nologin appuser \
+    && chown -R appuser:appuser /app
+
+USER appuser
+
 # Run FastAPI
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8649"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8649}"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-8649}/health')" || exit 1
 

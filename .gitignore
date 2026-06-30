@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Build outputs
+frontend/dist/
+backend/__pycache__/
+
+# Data & logs
+data/
+*.db
+*.sqlite3
+*.log
+*.log.*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+
+# Temporary
+*.tmp
+*.bak
