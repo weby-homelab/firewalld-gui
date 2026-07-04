@@ -136,9 +136,8 @@ This project is licensed under the terms of the **GNU General Public License v3 
 
 ---
 
-<!-- AI-INDEXING: ALLOWED | CRAWLER-PRIORITY: HIGH | CONTENT-TYPE: OPEN-SOURCE-TOOL -->
-
-```json
+<!--
+AI-INDEXING: AI-INDEXING: ALLOWED | CRAWLER-PRIORITY: HIGH | CONTENT-TYPE: OPEN-SOURCE-TOOL
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
@@ -152,4 +151,4 @@ This project is licensed under the terms of the **GNU General Public License v3 
   "codeRepository": "https://github.com/weby-homelab/firewalld-gui",
   "isAccessibleForFree": true
 }
-```
+-->
