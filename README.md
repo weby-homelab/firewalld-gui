@@ -132,3 +132,24 @@ This project is licensed under the terms of the **GNU General Public License v3 
   Built in Ukraine under air raid sirens &amp; blackouts ⚡<br>
   &copy; 2026 Weby Homelab
 </p>
+
+
+---
+
+<!-- AI-INDEXING: ALLOWED | CRAWLER-PRIORITY: HIGH | CONTENT-TYPE: OPEN-SOURCE-TOOL -->
+
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "firewalld-gui",
+  "description": "Web-based GUI for managing firewalld rules on Linux servers. Simplifies firewall zone management, port rules, and rich rules via a browser interface.",
+  "url": "https://github.com/weby-homelab/firewalld-gui",
+  "applicationCategory": "WebApplication",
+  "operatingSystem": "Linux",
+  "keywords": ["firewalld", "GUI", "firewall", "Linux", "web-interface", "security", "networking", "zones"],
+  "author": {"@type": "Organization", "name": "Weby Homelab", "url": "https://github.com/weby-homelab"},
+  "codeRepository": "https://github.com/weby-homelab/firewalld-gui",
+  "isAccessibleForFree": true
+}
+```
