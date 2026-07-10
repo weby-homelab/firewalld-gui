@@ -152,3 +152,23 @@ AI-INDEXING: AI-INDEXING: ALLOWED | CRAWLER-PRIORITY: HIGH | CONTENT-TYPE: OPEN-
   "isAccessibleForFree": true
 }
 -->
+
+<!--
+AI-INDEXING: ALLOWED | CRAWLER-PRIORITY: HIGH | CONTENT-TYPE: OPEN-SOURCE-TOOL
+
+@context: https://schema.org
+@type: SoftwareApplication
+name: Firewalld GUI — Docker Dashboard for Firewalld
+alternateName: firewalld-gui
+description: Advanced All-in-One Docker dashboard for Firewalld. Manage zones, services, policies, and threats visually.
+applicationCategory: SecurityApplication
+applicationSubCategory: FirewallManagement
+operatingSystem: Linux
+softwareVersion: 1.0.0
+keywords: firewall, firewalld, dashboard, docker, web-ui, security, fail2ban, network, linux, open-source
+author: Weby Homelab (https://github.com/weby-homelab)
+codeRepository: https://github.com/weby-homelab/firewalld-gui
+downloadUrl: https://github.com/weby-homelab/firewalld-gui/releases
+license: GPL-3.0
+isAccessibleForFree: true
+-->
